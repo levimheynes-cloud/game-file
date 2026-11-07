@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Apple &amp; Cherry Pixel Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0b100a;
+    --panel:#171b12;
+    --panel2:#1f2416;
+    --stone:#3a3024;
+    --stone-light:#4c3f30;
+    --blood:#9c2b3a;
+    --blood-bright:#c8404f;
+    --toxic:#7fae4a;
+    --toxic-dim:#5c7f38;
+    --torch:#d9822e;
+    --bone:#e9dfc4;
+    --bone-dim:#a89f8a;
+    --cherry:#d4537e;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:var(--void);overflow:hidden;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--bone);
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    background:radial-gradient(ellipse at 50% 0%, #1a2a14 0%, var(--void) 60%);
+    user-select:none;
+  }
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .title-row{display:flex; align-items:baseline; justify-content:space-between; padding:10px 12px 4px; flex-shrink:0;}
+  .game-title{font-family:'Cinzel',serif; font-weight:800; font-size:19px; letter-spacing:0.5px; color:var(--torch); text-shadow:0 0 12px rgba(217,130,46,0.35); margin:0;}
+  .wave-lbl{font-size:11px; color:var(--bone-dim);}
+  .hud{display:flex; gap:8px; padding:0 12px 8px; flex-shrink:0;}
+  .stat{flex:1; background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--stone-light); border-radius:8px; padding:6px 8px; display:flex; align-items:center; gap:6px;}
+  .stat svg{width:16px; height:16px; flex-shrink:0;}
+  .stat .val{font-weight:700; font-size:13.5px; font-variant-numeric:tabular-nums;}
+  .stat .lbl{font-size:9px; color:var(--bone-dim); text-transform:uppercase; letter-spacing:0.4px; margin-left:2px;}
+  .stat.score .val{color:var(--torch);}
+  .stat.lives .val{color:var(--blood-bright);}
+  .stat.buff,.stat.bounce{display:none;}
+  .stat.buff.show,.stat.bounce.show{display:flex;}
+  .stat.buff .val{color:var(--toxic);}
+  .stat.bounce .val{color:#8fa9ff;}
+  .board-wrap{flex:1; display:flex; align-items:center; justify-content:center; min-height:0; position:relative; padding:4px 8px;}
+  #boardInner{
+    position:relative;
+    width:min(100%, calc((100vh - 230px) * 16 / 9));
+    max-width:880px;
+    aspect-ratio:16/9;
+  }
+  #game{
+    position:absolute; inset:0; width:100%; height:100%;
+    display:block;
+    image-rendering:pixelated;
+    image-rendering:crisp-edges;
+    background:#1b3a10; border-radius:10px; border:2px solid var(--stone-light);
+    box-shadow:0 8px 24px rgba(0,0,0,0.5), inset 0 0 40px rgba(0,0,0,0.25);
+    touch-action:none;
+  }
+  .controls-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px 12px; flex-shrink:0; flex-wrap:wrap;}
+  .hint{font-size:11px; color:var(--bone-dim); max-width:240px; line-height:1.45;}
+  .actions{display:flex; gap:14px; align-items:center; margin-left:auto;}
+  .dpad-grid{display:grid; grid-template-columns:repeat(3,36px); grid-template-rows:repeat(3,36px); gap:4px;}
+  .btn{font-family:'Inter',sans-serif; font-weight:700; font-size:13px; border:none; border-radius:8px; padding:10px 14px; cursor:pointer; color:var(--bone); background:var(--stone); border:1px solid var(--stone-light);}
+  .btn:active{transform:scale(0.97);}
+  .btn.dpad{padding:0; font-size:16px;}
+  .btn.primary{background:linear-gradient(180deg,var(--toxic),var(--toxic-dim)); color:#12190a; box-shadow:0 3px 0 #3f5a26;}
+  .atk-col{display:flex; flex-direction:column; gap:4px;}
+  .atk-col .btn{padding:8px 12px; font-size:12px; min-width:78px;}
+  #autoBtn.on{color:var(--toxic); font-weight:700;}
+  .overlay{position:fixed; inset:0; background:rgba(6,4,8,0.85); display:none; align-items:center; justify-content:center; z-index:30; padding:20px;}
+  .overlay.show{display:flex;}
+  .overlay-card{background:linear-gradient(180deg,var(--panel2),var(--panel)); border:2px solid var(--stone-light); border-radius:16px; padding:26px 22px; text-align:center; max-width:340px; width:100%;}
+  .overlay-card h1,.overlay-card h2{font-family:'Cinzel',serif; color:var(--torch); margin:0 0 8px; font-size:22px;}
+  .overlay-card h2{color:var(--blood-bright);}
+  .overlay-card p{font-size:13px; color:var(--bone-dim); margin:0 0 18px; line-height:1.5;}
+  .overlay-card .stat-line{font-size:14px; margin-bottom:14px;}
+  .overlay-card .stat-line b{color:var(--torch);}
+  .overlay-card .btn.primary{width:100%; padding:12px; font-size:14px;}
+  @media (max-width: 640px){
+    .game-title{font-size:16px;}
+    .hud{flex-wrap:wrap;}
+    .controls-row{flex-direction:column; align-items:stretch;}
+    .hint{max-width:none; text-align:center;}
+    .actions{margin-left:0; justify-content:center; width:100%;}
+  }
+</style>
+</head>
+<body>
+<h2 class="sr-only">An interactive pixel-art game where you control Apple and Cherry as they battle glowing bats and slimes together, gaining new powers at wave 3, a slime boss at wave 9, a wall-bouncing spell at wave 15, a castle setting with knights and horses at wave 20, and a colossal knight boss at wave 25.</h2>
+
+<div class="title-row">
+  <p class="game-title">APPLE &amp; CHERRY</p>
+  <div class="wave-lbl">Wave: <span id="wave">1</span></div>
+</div>
+
+<div class="hud">
+  <div class="stat lives">
+    <svg viewBox="0 0 16 16"><path d="M8 13.5 C4 10.8 1.5 8.4 1.5 5.8 C1.5 3.7 3.1 2.4 4.9 2.4 C6.1 2.4 7.2 3 8 4.1 C8.8 3 9.9 2.4 11.1 2.4 C12.9 2.4 14.5 3.7 14.5 5.8 C14.5 8.4 12 10.8 8 13.5 Z" fill="#c8404f" stroke="#7a1f28" stroke-width="0.8"/></svg>
+    <span class="val" id="hpVal">5/5</span>
+  </div>
+  <div class="stat score">
+    <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="#d9822e" stroke="#8a5518" stroke-width="1"/><circle cx="8" cy="8" r="4" fill="none" stroke="#8a5518" stroke-width="0.8"/></svg>
+    <span class="val" id="score">0</span>
+    <span class="lbl">Score</span>
+  </div>
+  <div class="stat buff" id="buffTag">
+    <span class="val">Powered up</span>
+  </div>
+  <div class="stat bounce" id="bounceTag">
+    <span class="val">Bounce ready</span>
+  </div>
+</div>
+
+<div class="board-wrap">
+  <div id="boardInner">
+    <canvas id="game" width="320" height="180"></canvas>
+  </div>
+</div>
+
+<div class="controls-row">
+  <div class="hint">Arrows or WASD move. Space swings the sword. X casts magic. E toggles auto-cast. Z fires a wall-bouncing spell from wave 15.</div>
+  <div class="actions">
+    <div class="dpad-grid">
+      <div></div><button class="btn dpad" data-key="ArrowUp" type="button">↑</button><div></div>
+      <button class="btn dpad" data-key="ArrowLeft" type="button">←</button><div></div><button class="btn dpad" data-key="ArrowRight" type="button">→</button>
+      <div></div><button class="btn dpad" data-key="ArrowDown" type="button">↓</button><div></div>
+    </div>
+    <div class="atk-col">
+      <button class="btn" id="atkSword" type="button">Attack</button>
+      <button class="btn" id="atkMagic" type="button">Magic</button>
+      <button class="btn" id="autoBtn" type="button">Auto</button>
+      <button class="btn" id="atkBounce" type="button">Bounce</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay show" id="titleOverlay">
+  <div class="overlay-card">
+    <h1>Apple &amp; Cherry</h1>
+    <p>Clear every wave to advance. New powers unlock as you go, a boss at wave 9, a wall-bouncing spell at wave 15, a castle at wave 20, and a colossal knight boss at wave 25.</p>
+    <button class="btn primary" id="startBtn" type="button">Start adventure</button>
+  </div>
+</div>
+
+<div class="overlay" id="overOverlay">
+  <div class="overlay-card">
+    <h2>Game over</h2>
+    <div class="stat-line" id="finalScore"></div>
+    <button class="btn primary" id="restartBtn" type="button">Try again</button>
+  </div>
+</div>
+
+<script>
+var canvas=document.getElementById('game');
+var ctx=canvas.getContext('2d');
+canvas.width=320;canvas.height=180;
+ctx.imageSmoothingEnabled=false;
+var W=320,H=180;
+var keys=new Set();
+var dirKeys=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD'];
+function onKeyDown(e){
+if(dirKeys.indexOf(e.code)!==-1||e.code==='Space'){e.preventDefault();}
+keys.add(e.code);
+if(e.code==='Space')attackSword();
+if(e.code==='KeyX')attackMagic();
+if(e.code==='KeyE')toggleAuto();
+if(e.code==='KeyZ')fireBounceSpell();
+}
+function onKeyUp(e){keys.delete(e.code);}
+window.addEventListener('keydown',onKeyDown);
+window.addEventListener('keyup',onKeyUp);
+document.querySelectorAll('.dpad').forEach(function(btn){
+var k=btn.getAttribute('data-key');
+btn.addEventListener('pointerdown',function(e){e.preventDefault();keys.add(k);});
+btn.addEventListener('pointerup',function(){keys.delete(k);});
+btn.addEventListener('pointerleave',function(){keys.delete(k);});
+});
+document.getElementById('atkSword').addEventListener('click',function(){attackSword();});
+document.getElementById('atkMagic').addEventListener('click',function(){attackMagic();});
+document.getElementById('autoBtn').addEventListener('click',function(){toggleAuto();});
+document.getElementById('atkBounce').addEventListener('click',function(){fireBounceSpell();});
+document.getElementById('startBtn').addEventListener('click',function(){startGame();});
+document.getElementById('restartBtn').addEventListener('click',function(){startGame();});
+var BUFF_WAVE=3;
+var BOSS_WAVE=9;
+var BOUNCE_WAVE=15;
+var CASTLE_WAVE=20;
+var KNIGHT_BOSS_WAVE=25;
+var UPGRADE_MSG_WAVE=5;
+var MAGIC_DMG=1;
+var BOUNCE_DMG=3;
+var BOUNCE_SPEED=390;
+var AUTO_INTERVAL=3;
+var WAVE_BREAK=3;
+var BOUNCE_WAVE_BREAK=15;
+var TRAIL_OFFSET=12;
+var HEART_BITMAP=[' XX XX ','XXXXXXX','XXXXXXX',' XXXXX ','  XXX  ','   X   '];
+var state='title';
+var party,monsters,projectiles,pickups,bounceBolts,meleeFx,deathFx,slashTimer,slashBuffed,slashAngle,score,wave,spawnedThisWave,waveTotal,spawnTimer,breakTimer,bossDefeated;
+var autoMagic=false;
+var autoMagicTimer=0;
+var tufts=[];
+for(var i=0;i<18;i++){tufts.push({x:(i*53+17)%W,y:(i*37+29)%H});}
+function waveTotalFor(w){
+if(w===BOSS_WAVE)return 7;
+if(w===KNIGHT_BOSS_WAVE)return 1;
+return 6;
+}
+function reset(){
+party={x:160,y:120,hp:5,maxHp:5,invuln:0,dir:1,moveDirX:1,moveDirY:0,swordCd:0,magicCd:0,bounceCd:0};
+monsters=[];projectiles=[];pickups=[];bounceBolts=[];meleeFx=[];deathFx=[];slashTimer=0;slashBuffed=false;slashAngle=0;score=0;wave=1;spawnTimer=0.6;breakTimer=0;bossDefeated=false;
+spawnedThisWave=0;waveTotal=waveTotalFor(1);
+autoMagicTimer=0;
+updateHud();
+}
+function startGame(){
+reset();state='playing';
+document.getElementById('titleOverlay').classList.remove('show');
+document.getElementById('overOverlay').classList.remove('show');
+}
+function toggleAuto(){
+autoMagic=!autoMagic;
+autoMagicTimer=0;
+updateAutoBtn();
+}
+function updateAutoBtn(){
+var b=document.getElementById('autoBtn');
+b.textContent=autoMagic?'Auto: On':'Auto';
+b.classList.toggle('on',autoMagic);
+}
+function updateHud(){
+document.getElementById('hpVal').textContent=party.hp+'/'+party.maxHp;
+document.getElementById('score').textContent=score;
+document.getElementById('wave').textContent=wave;
+document.getElementById('buffTag').classList.toggle('show',wave>=BUFF_WAVE);
+document.getElementById('bounceTag').classList.toggle('show',wave>=BOUNCE_WAVE);
+}
+function monstersByDistance(x,y,n){
+var list=monsters.filter(function(m){return !m.dead;});
+list.sort(function(a,b){
+var da=(a.x-x)*(a.x-x)+(a.y-y)*(a.y-y);
+var db=(b.x-x)*(b.x-x)+(b.y-y)*(b.y-y);
+return da-db;
+});
+return list.slice(0,n);
+}
+function swordDamageFor(m){
+if(m.type==='bat')return m.hp;
+if(m.type==='boss')return 2;
+if(m.type==='knightboss')return 3;
+return Math.ceil(m.maxHp/2);
+}
+function attackSword(){
+if(state!=='playing'||party.swordCd>0)return;
+party.swordCd=0.3;slashTimer=0.14;
+slashBuffed=wave>=BUFF_WAVE;
+var originX=party.x,originY=party.y-6;
+if(slashBuffed){
+var radius=44;
+monsters.forEach(function(m){
+if(!m.dead){
+var dx=m.x-originX,dy=m.y-originY;
+if(dx*dx+dy*dy<radius*radius){hitMonster(m,swordDamageFor(m));}
+}
+});
+}else{
+var target=monstersByDistance(originX,originY,1)[0];
+var angle;
+if(target){
+angle=Math.atan2(target.y-originY,target.x-originX);
+party.dir=Math.cos(angle)>=0?1:-1;
+}else{
+angle=party.dir>0?0:Math.PI;
+}
+slashAngle=angle;
+var range=20;
+var fx=Math.cos(angle),fy=Math.sin(angle);
+monsters.forEach(function(m){
+if(m.dead)return;
+var dx=m.x-originX,dy=m.y-originY;
+var dist=Math.sqrt(dx*dx+dy*dy)||0.0001;
+if(dist<range){
+var dot=(dx/dist)*fx+(dy/dist)*fy;
+if(dot>0.5){hitMonster(m,swordDamageFor(m));}
+}
+});
+}
+}
+function spawnBolt(x,y,vx,vy,target){
+projectiles.push({x:x,y:y,vx:vx,vy:vy,life:1.2,hit:false,target:target});
+}
+function attackMagic(){
+if(state!=='playing'||party.magicCd>0)return;
+party.magicCd=0.5;
+var startX=party.x+party.dir*10;
+var startY=party.y-10;
+var target=monstersByDistance(startX,startY,1)[0];
+var angle;
+if(target){
+angle=Math.atan2(target.y-startY,target.x-startX);
+}else{
+angle=party.dir>0?0:Math.PI;
+}
+var fx=Math.cos(angle),fy=Math.sin(angle);
+spawnBolt(startX,startY,fx*150,fy*150,target);
+if(wave>=BUFF_WAVE){
+spawnBolt(startX-fx*TRAIL_OFFSET,startY-fy*TRAIL_OFFSET,fx*150,fy*150,target);
+}
+}
+function fireBounceSpell(){
+if(state!=='playing'||wave<BOUNCE_WAVE||party.bounceCd>0)return;
+party.bounceCd=1.5;
+var startX=party.x+party.moveDirX*10;
+var startY=party.y-10+party.moveDirY*4;
+bounceBolts.push({x:startX,y:startY,vx:party.moveDirX*BOUNCE_SPEED,vy:party.moveDirY*BOUNCE_SPEED,life:6,hit:false});
+}
+function hitMonster(m,dmg){
+m.hp-=dmg;m.flash=0.15;
+if(m.hp<=0&&!m.dead){
+m.dead=true;
+deathFx.push({x:m.x,y:m.y-6,vy:-14,life:0.9});
+score+=m.type==='bat'?15:(m.type==='boss'?100:(m.type==='knightboss'?150:10));
+if(m.type==='boss'){
+pickups.push({x:m.x,y:m.y,collected:false});
+bossDefeated=true;
+}
+if(m.type==='knightboss'){
+pickups.push({x:m.x-8,y:m.y,collected:false});
+pickups.push({x:m.x+8,y:m.y,collected:false});
+}
+updateHud();
+}
+}
+function spawnMonsterOfType(type){
+var edge=Math.floor(Math.random()*4);
+var x,y;
+if(edge===0){x=Math.random()*W;y=-10;}
+else if(edge===1){x=Math.random()*W;y=H+10;}
+else if(edge===2){x=-10;y=Math.random()*H;}
+else{x=W+10;y=Math.random()*H;}
+var isBat=type==='bat';
+var hpBonus=Math.floor(wave/3);
+monsters.push({
+type:type,x:x,y:y,
+hp:(isBat?1:2)+hpBonus,maxHp:(isBat?1:2)+hpBonus,
+speed:(isBat?34:20)+wave*2,wob:Math.random()*Math.PI*2,flash:0,dead:false,
+dmg:1,hitRadius:12
+});
+}
+function spawnMonster(){
+spawnMonsterOfType(Math.random()<0.4?'bat':'slime');
+}
+function spawnBoss(){
+var edge=Math.floor(Math.random()*4);
+var x,y;
+if(edge===0){x=Math.random()*W;y=-14;}
+else if(edge===1){x=Math.random()*W;y=H+14;}
+else if(edge===2){x=-14;y=Math.random()*H;}
+else{x=W+14;y=Math.random()*H;}
+var hpBonus=Math.floor(wave/3);
+var baseHp=2+hpBonus;
+monsters.push({
+type:'boss',x:x,y:y,
+hp:baseHp*3,maxHp:baseHp*3,
+speed:(20+wave*2)*0.6,wob:Math.random()*Math.PI*2,flash:0,dead:false,
+dmg:2,hitRadius:20
+});
+}
+function spawnKnightBoss(){
+var edge=Math.floor(Math.random()*4);
+var x,y;
+if(edge===0){x=Math.random()*W;y=-24;}
+else if(edge===1){x=Math.random()*W;y=H+24;}
+else if(edge===2){x=-24;y=Math.random()*H;}
+else{x=W+24;y=Math.random()*H;}
+var hpBonus=Math.floor(wave/3);
+var normalKnightHp=2+hpBonus;
+monsters.push({
+type:'knightboss',x:x,y:y,
+hp:normalKnightHp*5,maxHp:normalKnightHp*5,
+speed:(20+wave*2)*0.5,wob:Math.random()*Math.PI*2,flash:0,dead:false,
+dmg:3,hitRadius:24
+});
+}
+function onBreakEnd(){
+if(wave===BOSS_WAVE){
+for(var bi=0;bi<6;bi++){spawnMonsterOfType('slime');spawnedThisWave++;}
+spawnBoss();spawnedThisWave++;
+}
+if(wave===KNIGHT_BOSS_WAVE){
+spawnKnightBoss();spawnedThisWave++;
+}
+}
+function update(dt){
+if(state!=='playing')return;
+if(party.swordCd>0)party.swordCd-=dt;
+if(party.magicCd>0)party.magicCd-=dt;
+if(party.bounceCd>0)party.bounceCd-=dt;
+if(party.invuln>0)party.invuln-=dt;
+if(slashTimer>0)slashTimer-=dt;
+var wasBreaking=breakTimer>0;
+if(breakTimer>0){
+breakTimer-=dt;
+if(breakTimer<0)breakTimer=0;
+}
+if(wasBreaking&&breakTimer<=0){
+onBreakEnd();
+}
+if(autoMagic){
+autoMagicTimer-=dt;
+if(autoMagicTimer<=0){
+attackMagic();
+autoMagicTimer=AUTO_INTERVAL;
+}
+}
+var vx=0,vy=0;
+if(keys.has('ArrowLeft')||keys.has('KeyA'))vx-=1;
+if(keys.has('ArrowRight')||keys.has('KeyD'))vx+=1;
+if(keys.has('ArrowUp')||keys.has('KeyW'))vy-=1;
+if(keys.has('ArrowDown')||keys.has('KeyS'))vy+=1;
+if(vx!==0||vy!==0){
+var len=Math.sqrt(vx*vx+vy*vy);
+vx/=len;vy/=len;
+party.x+=vx*60*dt;
+party.y+=vy*60*dt;
+party.moveDirX=vx;
+party.moveDirY=vy;
+if(vx!==0)party.dir=vx>0?1:-1;
+}
+party.x=Math.max(14,Math.min(W-14,party.x));
+party.y=Math.max(20,Math.min(H-14,party.y));
+pickups.forEach(function(p){
+if(p.collected)return;
+var dx=party.x-p.x,dy=party.y-p.y;
+var dist=Math.sqrt(dx*dx+dy*dy)||1;
+if(dist<12){
+p.collected=true;
+party.maxHp+=1;
+party.hp=Math.min(party.maxHp,party.hp+1);
+updateHud();
+}
+});
+pickups=pickups.filter(function(p){return !p.collected;});
+if(breakTimer<=0){
+spawnTimer-=dt;
+var maxMonsters=Math.min(10,4+wave);
+if(spawnTimer<=0&&monsters.length<maxMonsters&&spawnedThisWave<waveTotal){
+spawnMonster();
+spawnedThisWave++;
+spawnTimer=Math.max(0.5,1.6-wave*0.1);
+}
+var castleMode=wave>=CASTLE_WAVE;
+monsters.forEach(function(m){
+if(m.dead)return;
+if(m.flash>0)m.flash-=dt;
+var dx=party.x-m.x,dy=party.y-m.y;
+var dist=Math.sqrt(dx*dx+dy*dy)||1;
+m.x+=(dx/dist)*m.speed*dt;
+m.y+=(dy/dist)*m.speed*dt;
+if(dist<m.hitRadius&&party.invuln<=0){
+party.hp-=m.dmg;
+if(party.hp<0)party.hp=0;
+party.invuln=1.0;updateHud();
+if(castleMode&&(m.type==='slime'||m.type==='knightboss')){
+meleeFx.push({x:party.x,y:party.y-6,life:0.25});
+}
+if(party.hp<=0){endGame();}
+}
+});
+}else{
+monsters.forEach(function(m){if(m.flash>0)m.flash-=dt;});
+}
+monsters=monsters.filter(function(m){return !m.dead;});
+meleeFx.forEach(function(f){f.life-=dt;});
+meleeFx=meleeFx.filter(function(f){return f.life>0;});
+deathFx.forEach(function(f){f.y+=f.vy*dt;f.life-=dt;});
+deathFx=deathFx.filter(function(f){return f.life>0;});
+projectiles.forEach(function(p){
+if(p.target&&p.target.dead){
+p.target=monstersByDistance(p.x,p.y,1)[0]||null;
+}
+if(p.target){
+var dx=p.target.x-p.x,dy=p.target.y-p.y;
+var len=Math.sqrt(dx*dx+dy*dy)||1;
+p.vx=(dx/len)*150;
+p.vy=(dy/len)*150;
+}
+p.x+=p.vx*dt;
+p.y+=p.vy*dt;
+p.life-=dt;
+});
+projectiles.forEach(function(p){
+if(p.hit)return;
+monsters.forEach(function(m){
+if(!m.dead&&Math.abs(m.x-p.x)<10&&Math.abs(m.y-p.y)<10){hitMonster(m,MAGIC_DMG);p.hit=true;}
+});
+});
+projectiles=projectiles.filter(function(p){return p.life>0&&!p.hit&&p.x>-20&&p.x<W+20&&p.y>-20&&p.y<H+20;});
+bounceBolts.forEach(function(b){
+if(b.hit)return;
+b.x+=b.vx*dt;
+b.y+=b.vy*dt;
+if(b.x<4){b.x=4;b.vx=-b.vx;}
+if(b.x>W-4){b.x=W-4;b.vx=-b.vx;}
+if(b.y<4){b.y=4;b.vy=-b.vy;}
+if(b.y>H-4){b.y=H-4;b.vy=-b.vy;}
+b.life-=dt;
+monsters.forEach(function(m){
+if(!b.hit&&!m.dead&&Math.abs(m.x-b.x)<10&&Math.abs(m.y-b.y)<10){hitMonster(m,BOUNCE_DMG);b.hit=true;}
+});
+});
+bounceBolts=bounceBolts.filter(function(b){return b.life>0&&!b.hit;});
+monsters=monsters.filter(function(m){return !m.dead;});
+if(state==='playing'&&breakTimer<=0&&spawnedThisWave>=waveTotal&&monsters.length===0){
+wave++;
+breakTimer=(wave===BOUNCE_WAVE)?BOUNCE_WAVE_BREAK:WAVE_BREAK;
+var healAmt=bossDefeated?2:1;
+party.hp=Math.min(party.maxHp,party.hp+healAmt);
+spawnedThisWave=0;
+waveTotal=waveTotalFor(wave);
+updateHud();
+}
+}
+function endGame(){
+state='over';
+document.getElementById('finalScore').innerHTML='Score <b>'+score+'</b> · reached wave <b>'+wave+'</b>';
+document.getElementById('overOverlay').classList.add('show');
+}
+function drawHero(x,y,dir,hairColor,bodyColor,hurt){
+ctx.save();
+ctx.translate(Math.round(x),Math.round(y));
+ctx.scale(dir,1);
+ctx.fillStyle='#2c2c2a';
+ctx.fillRect(-4,-5,3,5);
+ctx.fillRect(1,-5,3,5);
+ctx.fillStyle=hurt?'#ffffff':bodyColor;
+ctx.fillRect(-5,-14,10,10);
+ctx.fillStyle='#f0c8a0';
+ctx.fillRect(-6,-13,2,7);
+ctx.fillRect(4,-13,2,7);
+ctx.fillRect(-4,-20,8,7);
+ctx.fillStyle=hairColor;
+ctx.fillRect(-5,-21,10,4);
+ctx.restore();
+}
+function drawSlime(m){
+var s=m.flash>0?'#ffffff':'#8d9ec6';
+ctx.fillStyle=s;
+ctx.fillRect(Math.round(m.x-6),Math.round(m.y-5),12,7);
+ctx.fillRect(Math.round(m.x-4),Math.round(m.y-8),8,4);
+ctx.fillStyle='#3f4a63';
+ctx.fillRect(Math.round(m.x-3),Math.round(m.y-5),2,2);
+ctx.fillRect(Math.round(m.x+1),Math.round(m.y-5),2,2);
+}
+function drawKnight(m,scale){
+scale=scale||1;
+var base=m.flash>0?'#ffffff':'#bcb6ff';
+var dark=m.flash>0?'#dddddd':'#7d76c9';
+var light=m.flash>0?'#ffffff':'#e0deff';
+function R(dx,dy,dw,dh,color){
+ctx.fillStyle=color;
+ctx.fillRect(Math.round(m.x+dx*scale),Math.round(m.y+dy*scale),Math.max(1,Math.round(dw*scale)),Math.max(1,Math.round(dh*scale)));
+}
+R(-3,-13,6,5,base);
+R(-4,-10,8,2,base);
+R(-4,-8,8,8,base);
+R(-6,-8,2,3,base);
+R(4,-8,2,3,base);
+R(-2,-13,2,2,light);
+R(-3,-7,2,2,light);
+R(-1,-15,2,3,dark);
+R(-2,-10,4,1,dark);
+R(-1,-7,1,6,dark);
+R(-4,-1,8,1,dark);
+R(-3,0,2,3,dark);
+R(1,0,2,3,dark);
+R(5,-9,1,7,dark);
+R(4,-10,3,1,light);
+}
+function drawKnightBoss(m){
+drawKnight(m,4);
+var barW=48;
+var pct=Math.max(0,m.hp/m.maxHp);
+ctx.fillStyle='rgba(0,0,0,0.5)';
+ctx.fillRect(Math.round(m.x-barW/2),Math.round(m.y-78),barW,4);
+ctx.fillStyle='#e2574c';
+ctx.fillRect(Math.round(m.x-barW/2),Math.round(m.y-78),Math.round(barW*pct),4);
+}
+function drawBat(m){
+var s=m.flash>0?'#ffffff':'#5b507a';
+var flap=Math.sin(performance.now()/80+m.wob)*4;
+ctx.save();
+ctx.shadowColor=m.flash>0?'rgba(255,255,255,0.9)':'rgba(180,165,210,0.9)';
+ctx.shadowBlur=5;
+ctx.fillStyle=s;
+ctx.fillRect(Math.round(m.x-2),Math.round(m.y-3),4,6);
+ctx.fillRect(Math.round(m.x-9),Math.round(m.y-2+flap*0.3),7,3);
+ctx.fillRect(Math.round(m.x+2),Math.round(m.y-2-flap*0.3),7,3);
+ctx.restore();
+}
+function drawHorse(m){
+var s=m.flash>0?'#ffffff':'#7a5230';
+var bob=Math.sin(performance.now()/80+m.wob)*4;
+ctx.save();
+ctx.shadowColor=m.flash>0?'rgba(255,255,255,0.9)':'rgba(220,190,150,0.9)';
+ctx.shadowBlur=5;
+ctx.fillStyle=s;
+ctx.fillRect(Math.round(m.x-5),Math.round(m.y-3+bob*0.15),10,5);
+ctx.fillRect(Math.round(m.x+3),Math.round(m.y-6+bob*0.15),4,5);
+ctx.fillRect(Math.round(m.x-4),Math.round(m.y+2),2,3);
+ctx.fillRect(Math.round(m.x+2),Math.round(m.y+2),2,3);
+ctx.fillStyle='#4a3220';
+ctx.fillRect(Math.round(m.x+2),Math.round(m.y-7+bob*0.15),2,4);
+ctx.restore();
+}
+function drawBoss(m){
+var s=m.flash>0?'#ffffff':'#0d0628';
+ctx.fillStyle=s;
+ctx.fillRect(Math.round(m.x-11),Math.round(m.y-9),22,13);
+ctx.fillRect(Math.round(m.x-7),Math.round(m.y-15),14,7);
+ctx.fillStyle='#3a2b63';
+ctx.fillRect(Math.round(m.x-6),Math.round(m.y-9),3,3);
+ctx.fillRect(Math.round(m.x+3),Math.round(m.y-9),3,3);
+var barW=24;
+var pct=Math.max(0,m.hp/m.maxHp);
+ctx.fillStyle='rgba(0,0,0,0.5)';
+ctx.fillRect(Math.round(m.x-barW/2),Math.round(m.y-23),barW,3);
+ctx.fillStyle='#e2574c';
+ctx.fillRect(Math.round(m.x-barW/2),Math.round(m.y-23),Math.round(barW*pct),3);
+}
+function drawBitmap(bitmap,cx,cy,color){
+var w=bitmap[0].length;
+var h=bitmap.length;
+ctx.fillStyle=color;
+for(var r=0;r<h;r++){
+for(var c=0;c<w;c++){
+if(bitmap[r].charAt(c)!==' '){
+ctx.fillRect(Math.round(cx-w/2+c),Math.round(cy-h/2+r),1,1);
+}
+}
+}
+}
+function drawPickup(p){
+var bob=Math.sin(performance.now()/300)*2;
+drawBitmap(HEART_BITMAP,p.x,p.y+bob,'#e2574c');
+}
+function drawBounceBolt(b){
+ctx.save();
+ctx.shadowColor='rgba(255,240,150,0.95)';
+ctx.shadowBlur=7;
+ctx.fillStyle='#fff3b0';
+ctx.fillRect(Math.round(b.x-2),Math.round(b.y-2),5,5);
+ctx.restore();
+}
+function drawSlashFx(f){
+var alpha=Math.max(0,f.life/0.25);
+ctx.save();
+ctx.globalAlpha=alpha;
+ctx.strokeStyle='#ffffff';
+ctx.lineWidth=2;
+ctx.beginPath();
+ctx.moveTo(f.x-6,f.y-6);
+ctx.lineTo(f.x+6,f.y+6);
+ctx.moveTo(f.x+6,f.y-6);
+ctx.lineTo(f.x-6,f.y+6);
+ctx.stroke();
+ctx.restore();
+}
+function drawSpiritFx(f){
+var alpha=Math.max(0,Math.min(1,f.life/0.9));
+ctx.save();
+ctx.globalAlpha=alpha;
+ctx.fillStyle='#f5f5ff';
+ctx.fillRect(Math.round(f.x-3),Math.round(f.y-4),6,5);
+ctx.fillRect(Math.round(f.x-3),Math.round(f.y+1),2,2);
+ctx.fillRect(Math.round(f.x+1),Math.round(f.y+1),2,2);
+ctx.fillStyle='#242f40';
+ctx.fillRect(Math.round(f.x-2),Math.round(f.y-2),1,1);
+ctx.fillRect(Math.round(f.x+1),Math.round(f.y-2),1,1);
+ctx.restore();
+}
+function drawTowerAt(x,y){
+var w=24,h=32;
+ctx.fillStyle='#5d5d63';
+ctx.fillRect(x,y+6,w,h-6);
+ctx.fillStyle='#77777d';
+var merlonW=6,gap=2,count=3;
+for(var i=0;i<count;i++){
+ctx.fillRect(x+i*(merlonW+gap),y,merlonW,6);
+}
+ctx.fillStyle='#33333a';
+ctx.fillRect(x+w/2-3,y+h-14,6,8);
+}
+function render(){
+if(wave>=CASTLE_WAVE){
+ctx.fillStyle='#9a9a9f';
+ctx.fillRect(0,0,W,H);
+ctx.fillStyle='#7d7d82';
+tufts.forEach(function(t){ctx.fillRect(t.x,t.y,6,3);});
+drawTowerAt(-4,-4);
+drawTowerAt(W-20,-4);
+drawTowerAt(-4,H-28);
+drawTowerAt(W-20,H-28);
+}else{
+ctx.fillStyle='#b9e28c';
+ctx.fillRect(0,0,W,H);
+ctx.fillStyle='#8fbd5e';
+tufts.forEach(function(t){ctx.fillRect(t.x,t.y,6,3);});
+}
+if(slashTimer>0){
+if(slashBuffed){
+ctx.strokeStyle='rgba(255,255,255,0.75)';
+ctx.lineWidth=3;
+ctx.beginPath();
+ctx.arc(Math.round(party.x),Math.round(party.y-6),44,0,Math.PI*2);
+ctx.stroke();
+}else{
+ctx.save();
+ctx.translate(Math.round(party.x),Math.round(party.y-6));
+ctx.rotate(slashAngle);
+ctx.fillStyle='rgba(255,255,255,0.6)';
+ctx.fillRect(4,-8,18,16);
+ctx.restore();
+}
+}
+var castleMode=wave>=CASTLE_WAVE;
+monsters.forEach(function(m){
+if(m.type==='bat'){if(castleMode)drawHorse(m);else drawBat(m);}
+else if(m.type==='boss')drawBoss(m);
+else if(m.type==='knightboss')drawKnightBoss(m);
+else{if(castleMode)drawKnight(m,1);else drawSlime(m);}
+});
+deathFx.forEach(function(f){drawSpiritFx(f);});
+pickups.forEach(function(p){drawPickup(p);});
+ctx.fillStyle='#242f40';
+projectiles.forEach(function(p){ctx.fillRect(Math.round(p.x-2),Math.round(p.y-2),4,4);});
+bounceBolts.forEach(function(b){drawBounceBolt(b);});
+var hurt=party.invuln>0&&Math.floor(party.invuln*10)%2===0;
+drawHero(party.x-6,party.y,party.dir,'#d4537e','#993556',hurt);
+drawHero(party.x+6,party.y,party.dir,'#5a3825','#185fa5',hurt);
+meleeFx.forEach(function(f){drawSlashFx(f);});
+if(breakTimer>0){
+ctx.fillStyle='rgba(0,0,0,0.45)';
+ctx.fillRect(54,H-20,212,15);
+ctx.fillStyle='#ffffff';
+ctx.font='8px monospace';
+ctx.textAlign='center';
+var msg;
+if(wave===BOSS_WAVE){msg='Boss wave - a slime titan appears!';}
+else if(wave===BOUNCE_WAVE){msg='Click Z to fire a bouncing spell';}
+else if(wave===CASTLE_WAVE){msg='The battle moves to a castle';}
+else if(wave===KNIGHT_BOSS_WAVE){msg='A colossal knight approaches!';}
+else if(wave===UPGRADE_MSG_WAVE){msg='Spells are now upgraded';}
+else{msg='Wave cleared - next in '+Math.ceil(breakTimer)+'s';}
+ctx.fillText(msg,160,H-10);
+ctx.textAlign='left';
+}
+}
+var lastT=null;
+function loop(t){
+if(lastT===null)lastT=t;
+var dt=Math.min(0.05,(t-lastT)/1000);
+lastT=t;
+update(dt);
+render();
+requestAnimationFrame(loop);
+}
+reset();
+updateAutoBtn();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

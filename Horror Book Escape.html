@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Horror Book Escape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #8fd3ff;
+    font-family: "Nunito", "Avenir Next", "Trebuchet MS", sans-serif;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(16px, 4vh, 42px) 16px 0;
+  }
+  .title-block {
+    pointer-events: auto;
+    text-align: center;
+    max-width: min(920px, 94vw);
+  }
+  .buddy-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 6px;
+  }
+  .book-buddy {
+    width: 74px;
+    height: 64px;
+    position: relative;
+    animation: hop 2.2s ease-in-out infinite;
+  }
+  .book-buddy .cover {
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    width: 54px;
+    height: 46px;
+    border-radius: 4px 10px 10px 4px;
+    background: linear-gradient(180deg, #ffd36e 0%, #ffb347 100%);
+    box-shadow: 0 8px 0 #e0972e, 0 12px 16px rgba(120, 70, 20, 0.18);
+  }
+  .book-buddy .cover::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    border-radius: 4px 0 0 4px;
+    background: #f08a3c;
+  }
+  .book-buddy .face {
+    position: absolute;
+    left: 22px;
+    top: 16px;
+    width: 34px;
+    height: 26px;
+  }
+  .book-buddy .eye {
+    position: absolute;
+    top: 4px;
+    width: 7px;
+    height: 8px;
+    background: #3d2a1a;
+    border-radius: 50%;
+  }
+  .book-buddy .eye.l { left: 4px; }
+  .book-buddy .eye.r { right: 4px; }
+  .book-buddy .smile {
+    position: absolute;
+    left: 8px;
+    bottom: 2px;
+    width: 18px;
+    height: 9px;
+    border: 3px solid #3d2a1a;
+    border-top: 0;
+    border-radius: 0 0 12px 12px;
+  }
+  h1 {
+    margin: 0;
+    font-family: "Fredoka", "Avenir Next", "Trebuchet MS", sans-serif;
+    font-weight: 700;
+    font-size: clamp(40px, 7vw, 84px);
+    line-height: 0.95;
+    letter-spacing: 0.5px;
+    color: #ff6f91;
+    text-shadow:
+      0 3px 0 #fff,
+      0 6px 0 rgba(255, 183, 77, 0.85),
+      0 14px 24px rgba(255, 140, 160, 0.28);
+  }
+  h1 span {
+    display: inline-block;
+    animation: bob 2.6s ease-in-out infinite;
+  }
+  h1 span.space { width: 0.32em; }
+  [hidden] { display: none !important; }
+  #play {
+    display: block;
+    width: fit-content;
+    margin: 12px auto 0;
+    pointer-events: auto;
+    border: 0;
+    cursor: pointer;
+    font-family: "Fredoka", "Avenir Next", sans-serif;
+    font-size: clamp(18px, 2.4vw, 24px);
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(180deg, #7ddea0 0%, #3cba6e 100%);
+    border-radius: 999px;
+    padding: 12px 28px 14px;
+    box-shadow: 0 6px 0 #249453, 0 12px 18px rgba(40, 120, 70, 0.22);
+  }
+  #play:hover { transform: translateY(-1px); }
+  #play:active { transform: translateY(3px); box-shadow: 0 3px 0 #249453; }
+  #picker {
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(255, 246, 230, 0.82);
+  }
+  .picker-card { width: min(880px, 100%); text-align: center; }
+  .picker-card h2 {
+    margin: 0;
+    font-family: "Fredoka", "Avenir Next", sans-serif;
+    font-size: clamp(32px, 5vw, 52px);
+    color: #ff6f91;
+    text-shadow: 0 3px 0 #fff, 0 6px 0 rgba(255, 183, 77, 0.8);
+  }
+  .picker-card p {
+    margin: 8px 0 0;
+    color: #3e6d4a;
+    font-weight: 800;
+  }
+  .choices {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .choice {
+    width: 190px;
+    border: 0;
+    background: #fff;
+    border-radius: 24px;
+    padding: 10px 10px 14px;
+    cursor: pointer;
+    box-shadow: 0 8px 0 rgba(255, 183, 120, 0.75);
+    font-family: "Fredoka", "Avenir Next", sans-serif;
+  }
+  .choice:hover, .choice:focus-visible { transform: translateY(-3px); outline: none; }
+  .choice canvas { width: 150px; height: 168px; display: block; margin: 0 auto; }
+  .choice b { display: block; margin-top: 2px; font-size: 22px; color: #2f6a4a; }
+  .choice span { display: block; font-family: "Nunito", sans-serif; font-size: 13px; color: #6d7a72; }
+  #view { position: fixed; inset: 0; z-index: 4; width: 100%; height: 100%; display: block; touch-action: none; }
+  #page-flash {
+    position: fixed; inset: 0; z-index: 20; pointer-events: none;
+    background: #fffaf0; opacity: 0; transition: opacity 0.35s linear;
+  }
+  #page-flash.show { opacity: 1; }
+  #caught-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(5, 3, 8, 0);
+    pointer-events: none;
+  }
+  #caught-line {
+    margin: 0;
+    max-width: 16em;
+    text-align: center;
+    color: #ff2d2d;
+    font-family: "Fredoka", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+    font-size: clamp(28px, 5vw, 54px);
+    font-weight: 700;
+    line-height: 1.25;
+    opacity: 0;
+    text-shadow: 0 0 16px rgba(160, 0, 0, 0.45);
+  }
+  #game-hud { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+  #game-hint, #sheep-count {
+    margin: 0; text-align: center; font-weight: 800; color: #245c38;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.8);
+  }
+  #game-hint { margin-top: 16px; font-size: 15px; }
+  #sheep-count { margin-top: 6px; font-size: 18px; color: #e07a3d; }
+  body.in-forest #game-hint, body.in-forest #sheep-count { color: #d7d0c4; text-shadow: 0 2px 8px #000; }
+  body.in-forest #game-hint { display: none; }
+  body.in-forest #sheep-count { margin-top: 12px; }
+  body.tutorial-on #stick,
+  body.tutorial-on #jump-btn,
+  body.tutorial-on #sheep-count { visibility: hidden; }
+  #forest-tutorial {
+    position: fixed;
+    inset: 0;
+    z-index: 8;
+    pointer-events: none;
+  }
+  #tutorial-caption {
+    position: absolute;
+    left: 50%;
+    bottom: 132px;
+    transform: translateX(-50%);
+    width: min(440px, calc(100vw - 36px));
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(18, 12, 10, 0.82);
+    color: #fff6ea;
+    font-family: "Fredoka", sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: center;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.28);
+  }
+  #tutorial-skip {
+    pointer-events: auto;
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    border: 0;
+    cursor: pointer;
+    font-family: "Fredoka", sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(20, 14, 12, 0.82);
+    border-radius: 14px;
+    padding: 10px 16px;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  }
+  #stick {
+    pointer-events: auto; position: absolute; left: 22px; bottom: 22px;
+    width: 118px; height: 118px; border-radius: 50%;
+    background: rgba(255,255,255,0.45); border: 3px solid rgba(255,255,255,0.9);
+    touch-action: none;
+  }
+  #knob {
+    position: absolute; left: 37px; top: 37px; width: 44px; height: 44px; border-radius: 50%;
+    background: #7ddea0; box-shadow: 0 4px 0 #249453;
+  }
+  #jump-btn {
+    pointer-events: auto; position: absolute; right: 22px; bottom: 28px;
+    width: 84px; height: 84px; border-radius: 50%; border: 0; cursor: pointer;
+    font-family: "Fredoka", sans-serif; font-size: 18px; font-weight: 700; color: #fff;
+    background: linear-gradient(180deg, #ffd36e, #f0a03a);
+    box-shadow: 0 6px 0 #c47a22;
+    touch-action: none;
+  }
+  #hunger {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+  }
+  #hunger b {
+    font-family: "Fredoka", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.2px;
+    color: #ffe7d4;
+    text-shadow: 0 2px 6px #000;
+  }
+  #hunger-bar { display: flex; gap: 2px; }
+  #hunger-bar i {
+    width: 7px;
+    height: 9px;
+    border-radius: 2px;
+    background: rgba(30, 16, 14, 0.55);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  }
+  #hunger-bar i.on { background: linear-gradient(180deg, #ffb35c, #e24b1a); }
+  #hotbar {
+    pointer-events: auto;
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: min(560px, calc(100vw - 230px));
+  }
+  .food {
+    width: 86px;
+    min-height: 70px;
+    border: 0;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: "Fredoka", sans-serif;
+    color: #fff;
+    padding: 6px 6px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .food b { font-size: 11px; line-height: 1.15; font-weight: 700; }
+  .food i {
+    display: block;
+    width: 36px;
+    height: 12px;
+    border-radius: 7px;
+  }
+  .food.raw {
+    background: linear-gradient(180deg, #c46b78, #8d3a48);
+    box-shadow: 0 4px 0 #5c2430;
+  }
+  .food.raw i { background: #e7a0a8; box-shadow: 0 3px 0 #8d3040; }
+  .food.yummy {
+    background: linear-gradient(180deg, #ffb15a, #e06a22);
+    box-shadow: 0 4px 0 #9a3e10;
+  }
+  .food.yummy i { background: #ffe08a; box-shadow: 0 3px 0 #c47a22; }
+  #pickup-btn, #burn-btn, #slip-btn {
+    pointer-events: auto;
+    position: absolute;
+    border: 0;
+    cursor: pointer;
+    font-family: "Fredoka", sans-serif;
+    font-weight: 700;
+    color: #fff;
+    touch-action: none;
+  }
+  #pickup-btn, #burn-btn {
+    left: 50%;
+    bottom: 124px;
+    transform: translateX(-50%);
+    min-width: 132px;
+    height: 54px;
+    padding: 0 18px;
+    border-radius: 18px;
+    font-size: 22px;
+  }
+  #pickup-btn { background: linear-gradient(180deg, #8d6a45, #6a4630); box-shadow: 0 5px 0 #3e291c; }
+  #burn-btn { background: linear-gradient(180deg, #ff8a3d, #e24b1a); box-shadow: 0 5px 0 #9a2e10; }
+  #slip-btn {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    font-size: 20px;
+    background: linear-gradient(180deg, #ffe16a, #f0a03a);
+    box-shadow: 0 6px 0 #c47a22;
+    color: #5a3208;
+  }
+  #bubbles { position: fixed; inset: 0; z-index: 7; pointer-events: none; }
+  .bubble {
+    position: absolute;
+    max-width: min(320px, 70vw);
+    margin: 0;
+    padding: 8px 12px;
+    border: 3px solid #fff;
+    border-radius: 16px;
+    background: rgba(255, 252, 245, 0.97);
+    color: #3e4a38;
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1.35;
+    text-align: center;
+    box-shadow: 0 6px 0 rgba(255, 210, 140, 0.5);
+    transform: translate(-50%, -100%);
+  }
+  .bubble.hero { background: #e7f6ff; max-width: min(280px, 64vw); }
+  .bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -9px;
+    transform: translateX(-50%);
+    border-width: 10px 8px 0;
+    border-style: solid;
+    border-color: rgba(255, 252, 245, 0.97) transparent transparent;
+  }
+  .bubble.hero::after { border-top-color: #e7f6ff; }
+  .bubble.pop { animation: pop 0.28s ease-out; }
+  @keyframes pop {
+    from { transform: translate(-50%, -100%) scale(0.82); }
+    to { transform: translate(-50%, -100%) scale(1); }
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+  @keyframes hop {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-8px) rotate(2deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    h1 span, .book-buddy { animation: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="city"></canvas>
+<div id="overlay">
+  <div class="title-block">
+    <div class="buddy-row">
+      <div class="book-buddy" aria-hidden="true">
+        <div class="cover"></div>
+        <div class="face">
+          <div class="eye l"></div>
+          <div class="eye r"></div>
+          <div class="smile"></div>
+        </div>
+      </div>
+    </div>
+    <h1 id="title" aria-label="Horror Book Escape"></h1>
+    <button id="play" type="button">Let's read!</button>
+  </div>
+</div>
+<div id="picker" hidden>
+  <div class="picker-card">
+    <h2>Who's reading tonight?</h2>
+    <p>Pick a friend. Then it's bedtime story time.</p>
+    <div class="choices">
+      <button class="choice" type="button" data-kind="pip">
+        <canvas data-kind="pip" width="150" height="168" aria-hidden="true"></canvas>
+        <b>Pip</b>
+        <span>Blue star pajamas</span>
+      </button>
+      <button class="choice" type="button" data-kind="nia">
+        <canvas data-kind="nia" width="150" height="168" aria-hidden="true"></canvas>
+        <b>Nia</b>
+        <span>Coral puff-hair pajamas</span>
+      </button>
+      <button class="choice" type="button" data-kind="leo">
+        <canvas data-kind="leo" width="150" height="168" aria-hidden="true"></canvas>
+        <b>Leo</b>
+        <span>Glasses and mint pajamas</span>
+      </button>
+    </div>
+  </div>
+</div>
+<div id="bubbles" aria-live="polite">
+  <p id="story-bubble" class="bubble" hidden></p>
+  <p id="hero-bubble" class="bubble hero" hidden></p>
+</div>
+<canvas id="view" hidden></canvas>
+<div id="page-flash"></div>
+<div id="caught-screen" hidden><p id="caught-line"></p></div>
+<div id="game-hud" hidden>
+  <p id="game-hint">Drag to look. Move with WASD, arrows, or the joystick.</p>
+  <p id="sheep-count">Sheep following: 0</p>
+  <div id="hunger" hidden>
+    <b>Hunger</b>
+    <div id="hunger-bar"></div>
+  </div>
+  <div id="hotbar" hidden></div>
+  <div id="stick" aria-hidden="true"><div id="knob"></div></div>
+  <button id="pickup-btn" type="button" hidden>Pick up</button>
+  <button id="burn-btn" type="button" hidden>Burn</button>
+  <button id="slip-btn" type="button" hidden>Catch!</button>
+  <button id="jump-btn" type="button">Jump</button>
+</div>
+<div id="forest-tutorial" hidden>
+  <p id="tutorial-caption"></p>
+  <button id="tutorial-skip" type="button">Skip</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+<script src="horror-obby.js?v=61"></script>
+<script>
+(function () {
+  const canvas = document.getElementById("city");
+  const ctx = canvas.getContext("2d");
+  const titleEl = document.getElementById("title");
+  const playBtn = document.getElementById("play");
+  const pickerEl = document.getElementById("picker");
+  const overlayEl = document.getElementById("overlay");
+  const storyBubble = document.getElementById("story-bubble");
+  const heroBubble = document.getElementById("hero-bubble");
+
+  const TITLE = "Horror Book Escape";
+  titleEl.innerHTML = TITLE.split("").map(function (ch, i) {
+    if (ch === " ") return '<span class="space"> </span>';
+    return '<span style="animation-delay:' + (i * 0.08) + 's">' + ch + "</span>";
+  }).join("");
+
+  const KIDS = {
+    pip: { skin: "#f3c39a", hair: "#6b3e26", style: "short", shirt: "#6eb6ff", pants: "#3f5ea8", shoe: "#f7f7f7", cheek: "#f3a3a0", star: true },
+    nia: { skin: "#8d5a3c", hair: "#241612", style: "puffs", shirt: "#ff9a8d", pants: "#b85c86", shoe: "#ffe08a", cheek: "#c4846c" },
+    leo: { skin: "#f6d2ae", hair: "#1d2430", style: "curly", shirt: "#8fe0b0", pants: "#3f7f68", shoe: "#ffd27a", cheek: "#f0b0a0", glasses: true }
+  };
+  const STORY_LINES = [
+    "One little sheep, deep in the forest.",
+    "One big wolf, red, glowing eyes.. waiting patiently.",
+    "The sheep ventures further. Never to return.",
+    "Now, little sheep, it is your turn"
+  ];
+  const HERO_LINE = "Huh? Me? Whatever its probs nothin'.";
+  const T = {
+    run0: 0.25,
+    run1: 0.95,
+    jump0: 0.95,
+    jump1: 1.9,
+    open0: 2.1,
+    open1: 2.7,
+    lines: [2.95, 5.35, 7.75, 10.15],
+    huh: 12.35,
+    suck0: 14.7,
+    suck1: 17.15
+  };
+
+  let mode = "title";
+  let hero = "pip";
+  let storyStart = 0;
+  let enteredBook = false;
+
+  playBtn.addEventListener("click", showPicker);
+  pickerEl.addEventListener("click", function (event) {
+    const btn = event.target.closest("[data-kind]");
+    if (!btn || mode !== "pick") return;
+    startStory(btn.getAttribute("data-kind"));
+  });
+
+  const buildingColors = ["#f7b7c8", "#8fd0c6", "#f6d58a", "#b7c4ff", "#ffc2a8", "#9ed69a", "#f3c1e0"];
+  const carColors = ["#ff8fab", "#7eb6ff", "#ffd166", "#80ed99", "#c8b6ff", "#ffb4a2", "#ffffff"];
+
+  let width = 0;
+  let height = 0;
+  let buildings = [];
+  let trees = [];
+  let cars = [];
+  let clouds = [];
+  let birds = [];
+  let eyes = null;
+  let nextEyesAt = 0;
+  let lastTree = -1;
+  let lastTime = 0;
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function layout() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const base = height * 0.64;
+    buildings = [];
+    let x = -30;
+    let i = 0;
+    while (x < width + 60) {
+      const bw = 78 + ((i * 47) % 64);
+      const bh = 110 + ((i * 73) % Math.max(140, height * 0.28));
+      buildings.push({
+        x: x,
+        w: bw,
+        h: bh,
+        base: base,
+        color: buildingColors[i % buildingColors.length],
+        bookshop: i % 5 === 2,
+        flower: i % 2 === 0
+      });
+      x += bw + 10;
+      i += 1;
+    }
+
+    const count = Math.max(5, Math.round(width / 210));
+    trees = [];
+    for (let t = 0; t < count; t += 1) {
+      const spread = width / count;
+      trees.push({
+        x: spread * t + spread * 0.5 + Math.sin(t * 1.7) * 16,
+        ground: height * 0.73,
+        scale: 0.82 + (t % 3) * 0.16,
+        phase: t * 1.35,
+        leaf: t % 2 === 0 ? "#3f9d49" : "#2f8a43"
+      });
+    }
+    if (eyes && eyes.treeIndex >= trees.length) eyes = null;
+
+    const laneA = height * 0.82;
+    const laneB = height * 0.9;
+    if (cars.length === 0) {
+      for (let c = 0; c < 8; c += 1) {
+        cars.push({
+          x: Math.random() * width,
+          lane: c % 2,
+          dir: c % 2 === 0 ? 1 : -1,
+          speed: 80 + Math.random() * 110,
+          color: carColors[c % carColors.length],
+          w: 84 + (c % 3) * 22,
+          h: c % 3 === 1 ? 40 : 32
+        });
+      }
+    }
+    cars.forEach(function (car) {
+      car.y = car.lane === 0 ? laneA : laneB;
+    });
+
+    if (clouds.length === 0) {
+      for (let k = 0; k < 5; k += 1) {
+        clouds.push({
+          x: Math.random() * width,
+          y: height * (0.06 + Math.random() * 0.16),
+          s: 0.7 + Math.random() * 0.8,
+          speed: 8 + Math.random() * 14
+        });
+      }
+    } else {
+      clouds.forEach(function (cloud, index) {
+        cloud.y = height * (0.06 + (index % 5) * 0.03);
+      });
+    }
+
+    if (birds.length === 0) {
+      for (let b = 0; b < 3; b += 1) {
+        birds.push({
+          x: Math.random() * width,
+          y: height * (0.12 + Math.random() * 0.12),
+          speed: 28 + Math.random() * 20,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+  }
+
+  function treeSway(tree, time) {
+    return Math.sin(time * 0.0015 + tree.phase) * 5;
+  }
+
+  function canopyCenter(tree, time) {
+    const sway = treeSway(tree, time);
+    const trunkH = 86 * tree.scale;
+    const canopyR = 50 * tree.scale;
+    return {
+      x: tree.x + sway,
+      y: tree.ground - trunkH - canopyR * 0.15,
+      sway: sway,
+      trunkH: trunkH,
+      canopyR: canopyR
+    };
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+  }
+
+  function drawSky(time) {
+    const sky = ctx.createLinearGradient(0, 0, 0, height);
+    sky.addColorStop(0, "#8fd3ff");
+    sky.addColorStop(0.55, "#c7ecff");
+    sky.addColorStop(1, "#fff3d4");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, width, height);
+
+    const sunX = width * 0.84;
+    const sunY = height * 0.16;
+    const glow = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 140);
+    glow.addColorStop(0, "rgba(255, 236, 140, 0.95)");
+    glow.addColorStop(1, "rgba(255, 236, 140, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 140, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffe56a";
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 36, 0, Math.PI * 2);
+    ctx.fill();
+
+    clouds.forEach(function (cloud) {
+      drawCloud(cloud.x, cloud.y, cloud.s);
+    });
+
+    birds.forEach(function (bird) {
+      const flap = Math.sin(time * 0.01 + bird.phase) * 5;
+      ctx.strokeStyle = "rgba(70, 90, 110, 0.75)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bird.x - 8, bird.y);
+      ctx.quadraticCurveTo(bird.x - 4, bird.y - 6 - flap, bird.x, bird.y);
+      ctx.quadraticCurveTo(bird.x + 4, bird.y - 6 - flap, bird.x + 8, bird.y);
+      ctx.stroke();
+    });
+  }
+
+  function drawCloud(x, y, s) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.beginPath();
+    ctx.arc(x, y, 22 * s, 0, Math.PI * 2);
+    ctx.arc(x + 24 * s, y + 4 * s, 18 * s, 0, Math.PI * 2);
+    ctx.arc(x - 22 * s, y + 6 * s, 16 * s, 0, Math.PI * 2);
+    ctx.arc(x + 8 * s, y + 10 * s, 16 * s, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawBuildings() {
+    buildings.forEach(function (b) {
+      const top = b.base - b.h;
+      ctx.fillStyle = b.color;
+      roundRect(b.x, top, b.w, b.h, 8);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.fillRect(b.x, top, b.w, 8);
+
+      const cols = Math.max(2, Math.floor(b.w / 26));
+      const rows = Math.max(2, Math.floor((b.h - 36) / 28));
+      for (let row = 0; row < rows; row += 1) {
+        for (let col = 0; col < cols; col += 1) {
+          const wx = b.x + 10 + col * ((b.w - 20) / cols);
+          const wy = top + 22 + row * 26;
+          ctx.fillStyle = (row + col) % 4 === 0 ? "#fff4c2" : "rgba(255,255,255,0.72)";
+          roundRect(wx, wy, 12, 16, 2);
+          ctx.fill();
+        }
+      }
+
+      if (b.flower) {
+        ctx.fillStyle = "#f28b82";
+        ctx.beginPath();
+        ctx.arc(b.x + 16, top + b.h - 8, 5, 0, Math.PI * 2);
+        ctx.arc(b.x + b.w - 16, top + b.h - 8, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (b.bookshop) {
+        ctx.fillStyle = "#fffaf2";
+        roundRect(b.x + 8, b.base - 28, b.w - 16, 22, 6);
+        ctx.fill();
+        ctx.fillStyle = "#e07a3d";
+        ctx.font = "700 13px Fredoka, Nunito, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("BOOKS", b.x + b.w / 2, b.base - 17);
+      }
+    });
+  }
+
+  function drawSidewalkAndRoad() {
+    ctx.fillStyle = "#d9c3a4";
+    ctx.fillRect(0, height * 0.7, width, height * 0.08);
+    ctx.fillStyle = "#c4ae90";
+    ctx.fillRect(0, height * 0.76, width, 4);
+
+    ctx.fillStyle = "#6d7580";
+    ctx.fillRect(0, height * 0.77, width, height * 0.23);
+
+    ctx.fillStyle = "#f2d25a";
+    const dashY = height * 0.875;
+    for (let x = 0; x < width; x += 48) {
+      roundRect(x + 8, dashY, 26, 5, 2);
+      ctx.fill();
+    }
+  }
+
+  function drawCanopyBlobs(cx, cy, r, color, alpha) {
+    ctx.fillStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(cx - r * 0.72, cy + r * 0.18, r * 0.74, 0, Math.PI * 2);
+    ctx.arc(cx + r * 0.74, cy + r * 0.16, r * 0.7, 0, Math.PI * 2);
+    ctx.arc(cx + r * 0.05, cy - r * 0.55, r * 0.68, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawTree(tree, time) {
+    const c = canopyCenter(tree, time);
+    ctx.fillStyle = "#7a4e2d";
+    roundRect(tree.x - 8 * tree.scale + c.sway * 0.25, tree.ground - c.trunkH, 16 * tree.scale, c.trunkH, 4);
+    ctx.fill();
+
+    drawCanopyBlobs(c.x, c.y, c.canopyR, tree.leaf, 1);
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    ctx.beginPath();
+    ctx.arc(c.x - c.canopyR * 0.35, c.y - c.canopyR * 0.45, c.canopyR * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+
+  }
+
+  function eyeOpenAmount(elapsed) {
+    let open = 1;
+    if (elapsed < 160) open = elapsed / 160;
+    else if (elapsed > 1720) open = Math.max(0, (2000 - elapsed) / 280);
+
+    [640, 1240].forEach(function (blinkAt) {
+      const half = 100;
+      const dist = Math.abs(elapsed - blinkAt);
+      if (dist < half) open *= dist / half;
+    });
+    return Math.max(0, Math.min(1, open));
+  }
+
+  function drawEyes(x, y, open, scale) {
+    const eyeW = 15 * scale;
+    const eyeH = Math.max(0.9, 10 * scale * open);
+    const gap = 11 * scale;
+    ctx.save();
+    ctx.shadowColor = "rgba(255, 20, 20, 0.95)";
+    ctx.shadowBlur = 18 * Math.max(open, 0.25);
+    [-1, 1].forEach(function (side) {
+      const ex = x + side * gap;
+      ctx.fillStyle = "#ff1c1c";
+      ctx.beginPath();
+      ctx.ellipse(ex, y, eyeW, eyeH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (open > 0.4) {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#140000";
+        ctx.beginPath();
+        ctx.ellipse(ex + eyeW * 0.05, y, eyeW * 0.34, eyeH * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.beginPath();
+        ctx.arc(ex - eyeW * 0.22, y - eyeH * 0.22, Math.max(1, 1.6 * scale), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 18 * open;
+      }
+    });
+    ctx.restore();
+  }
+
+  function drawCar(car) {
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    if (car.dir < 0) ctx.scale(-1, 1);
+    const w = car.w;
+    const h = car.h;
+
+    ctx.fillStyle = "rgba(0,0,0,0.15)";
+    ctx.beginPath();
+    ctx.ellipse(0, h * 0.48, w * 0.42, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = car.color;
+    roundRect(-w / 2, -h * 0.45, w, h * 0.7, 10);
+    ctx.fill();
+    roundRect(-w * 0.28, -h * 0.95, w * 0.55, h * 0.55, 10);
+    ctx.fill();
+
+    ctx.fillStyle = "#d7f1ff";
+    roundRect(-w * 0.2, -h * 0.82, w * 0.18, h * 0.32, 4);
+    ctx.fill();
+    roundRect(w * 0.02, -h * 0.82, w * 0.18, h * 0.32, 4);
+    ctx.fill();
+
+    ctx.fillStyle = "#2c3138";
+    const spin = (car.x / 18) % (Math.PI * 2);
+    [-w * 0.3, w * 0.28].forEach(function (wx) {
+      ctx.beginPath();
+      ctx.arc(wx, h * 0.22, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#d9dde2";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(wx, h * 0.22);
+      ctx.lineTo(wx + Math.cos(spin) * 6, h * 0.22 + Math.sin(spin) * 6);
+      ctx.stroke();
+    });
+
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
+    ctx.fillRect(w * 0.34, -h * 0.2, 6, 4);
+    ctx.restore();
+  }
+
+  function visibleTreeIndexes(now) {
+    const block = document.querySelector(".title-block");
+    const rect = block.getBoundingClientRect();
+    const pad = 28;
+    const open = [];
+    trees.forEach(function (tree, index) {
+      const spot = canopyCenter(tree, now);
+      const eyeY = spot.y - spot.canopyR * 0.02;
+      const hidden = spot.x > rect.left - pad && spot.x < rect.right + pad && eyeY > rect.top - pad && eyeY < rect.bottom + pad;
+      if (!hidden) open.push(index);
+    });
+    if (open.length) return open;
+    return trees.map(function (_, index) { return index; });
+  }
+
+  function update(dt, now) {
+    clouds.forEach(function (cloud) {
+      cloud.x += cloud.speed * dt;
+      if (cloud.x > width + 80) cloud.x = -80;
+    });
+    birds.forEach(function (bird) {
+      bird.x += bird.speed * dt;
+      bird.y += Math.sin(now * 0.001 + bird.phase) * 0.15;
+      if (bird.x > width + 20) bird.x = -20;
+    });
+    cars.forEach(function (car) {
+      car.x += car.speed * car.dir * dt;
+      const limit = car.w + 40;
+      if (car.x > width + limit) car.x = -limit;
+      if (car.x < -limit) car.x = width + limit;
+    });
+
+    if (!trees.length) return;
+    if (nextEyesAt === 0) nextEyesAt = now + rand(5000, 8000);
+
+    if (!eyes && now >= nextEyesAt) {
+      const choices = visibleTreeIndexes(now);
+      let index = choices[Math.floor(Math.random() * choices.length)];
+      if (choices.length > 1) {
+        while (index === lastTree) index = choices[Math.floor(Math.random() * choices.length)];
+      }
+      lastTree = index;
+      eyes = { treeIndex: index, start: now };
+    }
+
+    if (eyes && now - eyes.start >= 2000) {
+      eyes = null;
+      nextEyesAt = now + rand(5000, 8000);
+    }
+  }
+
+  function draw(now) {
+    drawSky(now);
+    drawBuildings();
+    drawSidewalkAndRoad();
+    trees.forEach(function (tree) {
+      drawTree(tree, now);
+    });
+    if (eyes && trees[eyes.treeIndex]) {
+      const tree = trees[eyes.treeIndex];
+      const spot = canopyCenter(tree, now);
+      drawEyes(spot.x, spot.y - spot.canopyR * 0.02, eyeOpenAmount(now - eyes.start), tree.scale);
+    }
+    cars.forEach(drawCar);
+  }
+
+  function frame(now) {
+    if (mode === "obby") return;
+    const dt = lastTime ? Math.min(0.05, (now - lastTime) / 1000) : 0;
+    lastTime = now;
+    if (mode === "story") drawStory(now);
+    else {
+      update(dt, now);
+      draw(now);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function beginInsideBook() {
+    if (enteredBook) return;
+    enteredBook = true;
+    mode = "obby";
+    storyBubble.hidden = true;
+    heroBubble.hidden = true;
+    const flash = document.getElementById("page-flash");
+    flash.style.background = "#fffaf0";
+    flash.classList.add("show");
+    setTimeout(function () {
+      document.getElementById("city").style.display = "none";
+      if (window.HorrorObby) window.HorrorObby.start(hero, KIDS[hero]);
+      requestAnimationFrame(function () { flash.classList.remove("show"); });
+    }, 380);
+  }
+
+  function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function seg(elapsed, a, b) { return clamp01((elapsed - a) / (b - a)); }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  function easeIn(t) { return t * t; }
+
+  function fillRound(c, x, y, w, h, r) {
+    c.beginPath();
+    c.roundRect(x, y, w, h, r);
+    c.fill();
+  }
+
+  function showPicker() {
+    if (mode !== "title") return;
+    mode = "pick";
+    overlayEl.hidden = true;
+    pickerEl.hidden = false;
+    drawPortraits();
+  }
+
+  function startStory(kind) {
+    if (window.HorrorObby && window.HorrorObby.stopTitle) window.HorrorObby.stopTitle();
+    hero = KIDS[kind] ? kind : "pip";
+    mode = "story";
+    storyStart = performance.now();
+    pickerEl.hidden = true;
+    overlayEl.hidden = true;
+    storyBubble.hidden = true;
+    heroBubble.hidden = true;
+    storyBubble.dataset.line = "";
+    heroBubble.dataset.line = "";
+  }
+
+  function drawPortraits() {
+    document.querySelectorAll(".choice canvas").forEach(function (cv) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cv.width = Math.floor(150 * dpr);
+      cv.height = Math.floor(168 * dpr);
+      const c = cv.getContext("2d");
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0, 0, 150, 168);
+      c.fillStyle = "#fff6ea";
+      c.beginPath();
+      c.arc(75, 78, 58, 0, Math.PI * 2);
+      c.fill();
+      drawKid(c, cv.getAttribute("data-kind"), 75, 148, { scale: 1.05, pose: "stand", expression: "smile" });
+    });
+  }
+
+  function drawKid(c, kind, x, y, opt) {
+    const k = KIDS[kind] || KIDS.pip;
+    const pose = opt.pose || "stand";
+    const expression = opt.expression || "smile";
+    const sc = opt.scale == null ? 1 : opt.scale;
+    if (sc <= 0.02) return;
+    c.save();
+    c.translate(x, y);
+    c.rotate(opt.rot || 0);
+    c.scale(sc * (opt.squashX || 1), sc * (opt.squashY || 1));
+    c.fillStyle = "rgba(80, 50, 30, 0.12)";
+    c.beginPath();
+    c.ellipse(0, 6, 24, 7, 0, 0, Math.PI * 2);
+    c.fill();
+    drawLegs(c, k, pose, opt.step || 0);
+    c.fillStyle = k.shirt;
+    fillRound(c, -18, -78, 36, 42, 14);
+    if (k.star) {
+      c.fillStyle = "#fff4b0";
+      drawStar(c, 0, -58, 7);
+    }
+    drawArms(c, k, pose);
+    c.fillStyle = k.skin;
+    c.beginPath();
+    c.ellipse(-20, -96, 5, 7, 0, 0, Math.PI * 2);
+    c.ellipse(20, -96, 5, 7, 0, 0, Math.PI * 2);
+    c.fill();
+    c.beginPath();
+    c.arc(0, -98, 20, 0, Math.PI * 2);
+    c.fill();
+    drawHair(c, k);
+    drawFace(c, k, expression);
+    c.restore();
+  }
+
+  function drawLegs(c, k, pose, step) {
+    c.fillStyle = k.pants;
+    if (pose === "jump") {
+      fillRound(c, -18, -50, 14, 24, 8);
+      fillRound(c, 4, -52, 14, 24, 8);
+      c.fillStyle = k.shoe;
+      c.beginPath();
+      c.ellipse(-10, -28, 8, 5, 0, 0, Math.PI * 2);
+      c.ellipse(12, -30, 8, 5, 0, 0, Math.PI * 2);
+      c.fill();
+      return;
+    }
+    if (pose === "sit" || pose === "shrug") {
+      fillRound(c, -22, -10, 20, 16, 8);
+      fillRound(c, 2, -10, 20, 16, 8);
+      c.fillStyle = k.shoe;
+      c.beginPath();
+      c.ellipse(-12, 8, 10, 6, 0, 0, Math.PI * 2);
+      c.ellipse(12, 8, 10, 6, 0, 0, Math.PI * 2);
+      c.fill();
+      return;
+    }
+    const swing = step * 5;
+    fillRound(c, -15, -44, 13, 36, 6);
+    fillRound(c, 2, -44, 13, 36, 6);
+    c.fillStyle = k.shoe;
+    fillRound(c, -17, -10 + swing, 16, 9, 4);
+    fillRound(c, 1, -10 - swing, 16, 9, 4);
+  }
+
+  function drawArms(c, k, pose) {
+    c.fillStyle = k.skin;
+    if (pose === "jump") {
+      fillRound(c, -30, -84, 12, 24, 6);
+      fillRound(c, 18, -86, 12, 24, 6);
+      return;
+    }
+    if (pose === "shrug") {
+      fillRound(c, -32, -96, 12, 22, 6);
+      fillRound(c, 18, -70, 12, 26, 6);
+      return;
+    }
+    const tuck = pose === "sit" ? 4 : 0;
+    fillRound(c, -28 + tuck, -74, 12, 30, 6);
+    fillRound(c, 16 - tuck, -74, 12, 30, 6);
+  }
+
+  function drawHair(c, k) {
+    c.fillStyle = k.hair;
+    if (k.style === "puffs") {
+      c.beginPath();
+      c.arc(-24, -104, 10, 0, Math.PI * 2);
+      c.arc(24, -104, 10, 0, Math.PI * 2);
+      c.arc(0, -112, 16, Math.PI, 0);
+      c.fill();
+      return;
+    }
+    if (k.style === "curly") {
+      [-14, 0, 14].forEach(function (x, i) {
+        c.beginPath();
+        c.arc(x, -114 - (i === 1 ? 4 : 0), 8, 0, Math.PI * 2);
+        c.fill();
+      });
+      c.beginPath();
+      c.arc(0, -108, 16, Math.PI, 0);
+      c.fill();
+      return;
+    }
+    c.beginPath();
+    c.arc(0, -110, 16, Math.PI * 1.02, Math.PI * -0.02);
+    c.fill();
+  }
+
+  function drawFace(c, k, expression) {
+    const worry = expression === "worry";
+    c.fillStyle = "#2b211c";
+    [-8, 8].forEach(function (ex) {
+      c.beginPath();
+      c.ellipse(ex, -98, worry ? 3.3 : 2.3, worry ? 3.8 : 2.7, 0, 0, Math.PI * 2);
+      c.fill();
+    });
+    if (worry) {
+      c.fillStyle = "#fff";
+      [-9, 7].forEach(function (ex) {
+        c.beginPath();
+        c.arc(ex, -99, 1.1, 0, Math.PI * 2);
+        c.fill();
+      });
+    }
+    c.fillStyle = k.cheek;
+    c.globalAlpha = 0.85;
+    c.beginPath();
+    c.arc(-12, -90, 3.2, 0, Math.PI * 2);
+    c.arc(12, -90, 3.2, 0, Math.PI * 2);
+    c.fill();
+    c.globalAlpha = 1;
+    c.strokeStyle = "#2b211c";
+    c.lineWidth = 2;
+    c.lineCap = "round";
+    c.beginPath();
+    if (expression === "worry") {
+      c.arc(0, -86, 3.4, 0, Math.PI * 2);
+    } else if (expression === "shrug") {
+      c.moveTo(-5, -84);
+      c.quadraticCurveTo(0, -81, 6, -85);
+    } else {
+      c.arc(0, -90, 7, 0.15 * Math.PI, 0.85 * Math.PI);
+    }
+    c.stroke();
+    if (k.glasses) {
+      c.strokeStyle = "#243044";
+      c.lineWidth = 2;
+      c.beginPath();
+      c.arc(-8, -98, 6.5, 0, Math.PI * 2);
+      c.arc(8, -98, 6.5, 0, Math.PI * 2);
+      c.moveTo(-1.5, -98);
+      c.lineTo(1.5, -98);
+      c.stroke();
+    }
+  }
+
+  function drawStar(c, x, y, r) {
+    c.beginPath();
+    for (let i = 0; i < 5; i += 1) {
+      const a = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+      const b = a + Math.PI / 5;
+      if (i === 0) c.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      else c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      c.lineTo(x + Math.cos(b) * r * 0.42, y + Math.sin(b) * r * 0.42);
+    }
+    c.closePath();
+    c.fill();
+  }
+
+  function layoutStory() {
+    const kidScale = Math.max(0.82, Math.min(1.2, Math.min(width / 980, height / 820)));
+    const bedW = Math.min(520, Math.max(300, width * 0.52));
+    const bedH = 116;
+    const bedX = (width - bedW) / 2;
+    const bedY = Math.max(168, Math.min(height * 0.46, height - 340));
+    const floorY = Math.min(height - 18, bedY + 196);
+    const seatX = bedX + bedW * 0.6;
+    return {
+      kidScale: kidScale,
+      bedX: bedX,
+      bedY: bedY,
+      bedW: bedW,
+      bedH: bedH,
+      floorY: floorY,
+      startX: Math.max(78, bedX - 120),
+      takeoffX: bedX + 6,
+      sitX: seatX,
+      sitY: bedY + 34,
+      bookX: seatX,
+      bookY: bedY + 72,
+      jumpH: 120 * kidScale
+    };
+  }
+
+  function storyMotion(elapsed, L) {
+    const state = {
+      x: L.startX,
+      y: L.floorY,
+      rot: 0,
+      scale: L.kidScale,
+      pose: "stand",
+      expression: "smile",
+      step: Math.sin(elapsed * 16),
+      squashX: 1,
+      squashY: 1,
+      hideKid: false,
+      bookOpen: 0,
+      line: -1,
+      showHuh: false,
+      suck: 0
+    };
+
+    if (elapsed < T.run0) {
+      state.y = L.floorY;
+    } else if (elapsed < T.jump0) {
+      const t = easeOut(seg(elapsed, T.run0, T.jump0));
+      state.x = lerp(L.startX, L.takeoffX, t);
+      state.y = L.floorY - Math.abs(Math.sin(elapsed * 18)) * 7;
+    } else if (elapsed < T.jump1) {
+      const t = seg(elapsed, T.jump0, T.jump1);
+      const e = easeOut(t);
+      state.x = lerp(L.takeoffX, L.sitX, e);
+      state.y = lerp(L.floorY, L.sitY, e) - Math.sin(Math.PI * t) * L.jumpH;
+      state.rot = -0.4 * Math.sin(Math.PI * t);
+      state.pose = "jump";
+    } else if (elapsed < T.suck0) {
+      state.x = L.sitX;
+      state.y = L.sitY;
+      state.pose = elapsed >= T.huh ? "shrug" : "sit";
+      state.expression = elapsed >= T.huh ? "shrug" : "smile";
+      const land = elapsed - T.jump1;
+      if (land < 0.16) {
+        state.squashX = 1.12;
+        state.squashY = 0.82;
+      }
+    } else if (elapsed < T.suck1) {
+      const u = seg(elapsed, T.suck0, T.suck1);
+      const e = easeIn(u);
+      state.suck = u;
+      state.x = lerp(L.sitX, L.bookX, e);
+      state.y = lerp(L.sitY, L.bookY, e);
+      state.rot = u * Math.PI * 4;
+      state.scale = L.kidScale * (1 - e);
+      state.pose = "jump";
+      state.expression = "worry";
+    } else {
+      state.hideKid = true;
+      state.suck = 1;
+    }
+
+    if (elapsed >= T.open1) state.bookOpen = 1;
+    else if (elapsed >= T.open0) state.bookOpen = easeOut(seg(elapsed, T.open0, T.open1));
+
+    if (elapsed >= T.lines[0] && elapsed < T.suck0) {
+      state.line = 0;
+      T.lines.forEach(function (mark, index) {
+        if (elapsed >= mark) state.line = index;
+      });
+    }
+    state.showHuh = elapsed >= T.huh && elapsed < T.suck0;
+    return state;
+  }
+
+  function drawStory(now) {
+    const elapsed = (now - storyStart) / 1000;
+    const L = layoutStory();
+    const state = storyMotion(elapsed, L);
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = clamp01(elapsed / 0.28);
+    drawBedroom(L, elapsed);
+    drawBed(L);
+    if (!state.hideKid && state.suck < 0.25) drawKid(ctx, hero, state.x, state.y, state);
+    drawStoryBook(L, state);
+    if (!state.hideKid && state.suck >= 0.25 && state.suck < 0.72) drawKid(ctx, hero, state.x, state.y, state);
+    if (!state.hideKid && state.suck >= 0.72) {
+      const page = bookFrame(L, state);
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(page.left, page.top, page.width, page.height, 8);
+      ctx.clip();
+      drawKid(ctx, hero, state.x, state.y, state);
+      ctx.restore();
+    }
+    if (state.suck > 0 && state.suck < 1) drawVortex(L, state.suck);
+    ctx.restore();
+    syncBubbles(L, state);
+    if (state.suck > 0.9) beginInsideBook();
+  }
+
+  function drawBedroom(L, elapsed) {
+    const wall = ctx.createLinearGradient(0, 0, 0, L.floorY);
+    wall.addColorStop(0, "#cfe6ff");
+    wall.addColorStop(0.55, "#f6e4ff");
+    wall.addColorStop(1, "#ffe6c2");
+    ctx.fillStyle = wall;
+    ctx.fillRect(0, 0, width, height);
+
+    const winX = width * 0.74;
+    const winY = Math.max(36, L.bedY - 210);
+    ctx.fillStyle = "#8d6b4a";
+    fillRound(ctx, winX, winY, 150, 120, 12);
+    ctx.fillStyle = "#1c2d66";
+    fillRound(ctx, winX + 8, winY + 8, 134, 104, 8);
+    ctx.fillStyle = "#f4f1c8";
+    ctx.beginPath();
+    ctx.arc(winX + 108, winY + 36, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(winX + 75, winY + 8);
+    ctx.lineTo(winX + 75, winY + 112);
+    ctx.moveTo(winX + 8, winY + 60);
+    ctx.lineTo(winX + 142, winY + 60);
+    ctx.stroke();
+
+    ctx.fillStyle = "#e7c091";
+    ctx.fillRect(0, L.floorY, width, height - L.floorY);
+    ctx.strokeStyle = "rgba(150, 96, 48, 0.28)";
+    ctx.lineWidth = 2;
+    for (let y = L.floorY + 18; y < height; y += 22) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "rgba(255, 196, 120, 0.45)";
+    ctx.beginPath();
+    ctx.ellipse(L.bedX + L.bedW * 0.5, L.floorY + 8, L.bedW * 0.46, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const lampX = L.bedX - 54;
+    const lampY = L.bedY + 10;
+    const glow = ctx.createRadialGradient(lampX, lampY - 20, 4, lampX, lampY - 20, 90);
+    glow.addColorStop(0, "rgba(255, 214, 110, 0.55)");
+    glow.addColorStop(1, "rgba(255, 214, 110, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(lampX, lampY - 20, 90, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#d0904e";
+    fillRound(ctx, lampX - 16, lampY, 32, 46, 6);
+    ctx.fillStyle = "#ffe28a";
+    ctx.beginPath();
+    ctx.moveTo(lampX - 18, lampY + 4);
+    ctx.lineTo(lampX + 18, lampY + 4);
+    ctx.lineTo(lampX + 10, lampY - 22);
+    ctx.lineTo(lampX - 10, lampY - 22);
+    ctx.closePath();
+    ctx.fill();
+    void elapsed;
+  }
+
+  function drawBed(L) {
+    const x = L.bedX;
+    const y = L.bedY;
+    const w = L.bedW;
+    const h = 108;
+    const drop = Math.max(16, L.floorY - (y + h - 8));
+    ctx.fillStyle = "#a86b3c";
+    [22, w - 40].forEach(function (lx) {
+      fillRound(ctx, x + lx, y + h - 12, 18, drop + 12, 5);
+    });
+    ctx.fillStyle = "#c9894e";
+    fillRound(ctx, x + 12, y + h - 30, w - 24, 28, 8);
+    ctx.fillStyle = "#8d5a32";
+    fillRound(ctx, x, y - 86, 36, h + 78, 12);
+    fillRound(ctx, x + w - 30, y + 16, 30, h - 22, 10);
+    ctx.fillStyle = "#fff7ee";
+    fillRound(ctx, x + 32, y + 4, w - 66, h - 34, 16);
+    ctx.fillStyle = "#cfe8ff";
+    fillRound(ctx, x + 46, y + 14, 70, 36, 14);
+    ctx.fillStyle = "#8fd4ff";
+    fillRound(ctx, x + w * 0.34, y + 36, w * 0.5, 48, 16);
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    fillRound(ctx, x + w * 0.34, y + 52, w * 0.5, 10, 5);
+    ctx.fillStyle = "#e0a060";
+    cBear(x + 78, y + 26);
+  }
+
+  function cBear(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.arc(x - 8, y - 10, 5, 0, Math.PI * 2);
+    ctx.arc(x + 8, y - 10, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f2c7a0";
+    ctx.beginPath();
+    ctx.arc(x, y + 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function bookFrame(L, state) {
+    const open = Math.max(state.bookOpen, state.suck > 0 ? 0.2 : 0);
+    const spread = (92 + state.suck * 78) * open;
+    const height = 84 + state.suck * 40;
+    return {
+      spread: spread,
+      left: L.bookX - spread,
+      top: L.bookY - height * 0.58,
+      width: spread * 2,
+      height: height
+    };
+  }
+
+  function drawStoryBook(L, state) {
+    const x = L.bookX;
+    const y = L.bookY;
+    if (state.bookOpen < 0.08 && state.suck <= 0) {
+      ctx.fillStyle = "#e0972e";
+      fillRound(ctx, x - 36, y - 40, 14, 58, 4);
+      ctx.fillStyle = "#ffd36e";
+      fillRound(ctx, x - 26, y - 44, 62, 64, 7);
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      fillRound(ctx, x - 14, y - 30, 36, 8, 3);
+      return;
+    }
+    const page = bookFrame(L, state);
+    const half = page.spread;
+    ctx.fillStyle = state.suck > 0.5 ? "#fff6d4" : "#fffdf6";
+    fillRound(ctx, page.left, page.top, Math.max(4, half - 3), page.height, 8);
+    fillRound(ctx, x + 3, page.top, Math.max(4, half - 3), page.height, 8);
+    if (state.suck > 0) {
+      ctx.fillStyle = "rgba(255, 236, 170, " + (0.15 + state.suck * 0.55) + ")";
+      fillRound(ctx, page.left, page.top, page.width, page.height, 8);
+    }
+    ctx.fillStyle = "#f3d7a2";
+    ctx.fillRect(x - 4, page.top, 8, page.height);
+    drawPageDoodle(x, y, half, state.line);
+    ctx.fillStyle = "rgba(90, 60, 20, 0.35)";
+    for (let i = 0; i < 4; i += 1) {
+      ctx.fillRect(page.left + 14, page.top + 18 + i * 12, Math.max(8, half * 0.5), 2);
+    }
+  }
+
+  function drawPageDoodle(x, y, spread, line) {
+    if (line < 0 || spread < 20) return;
+    const dx = x + spread * 0.45;
+    const dy = y - 8;
+    if (line === 0 || line === 2) {
+      ctx.fillStyle = "#f7f7f7";
+      ctx.beginPath();
+      ctx.ellipse(dx, dy, 10, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#222";
+      ctx.fillRect(dx - 8, dy + 4, 3, 6);
+      ctx.fillRect(dx + 4, dy + 4, 3, 6);
+      return;
+    }
+    if (line === 1) {
+      ctx.fillStyle = "#8d8f98";
+      ctx.beginPath();
+      ctx.arc(dx, dy, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff1c1c";
+      ctx.beginPath();
+      ctx.arc(dx - 3, dy - 1, 1.6, 0, Math.PI * 2);
+      ctx.arc(dx + 3, dy - 1, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawVortex(L, suck) {
+    ctx.save();
+    ctx.translate(L.bookX, L.bookY);
+    ctx.strokeStyle = "rgba(255, 214, 120, " + (0.35 + suck * 0.4) + ")";
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 5; i += 1) {
+      ctx.beginPath();
+      ctx.arc(0, 0, 18 + i * 10 * (1 - suck), suck * 6 + i, suck * 6 + i + 1.4);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function syncBubbles(L, state) {
+    const aboveHead = L.sitY - 112 * L.kidScale;
+    if (state.line < 0) {
+      storyBubble.hidden = true;
+      heroBubble.hidden = true;
+      return;
+    }
+    if (state.showHuh) {
+      setBubble(heroBubble, HERO_LINE, L.sitX, aboveHead);
+      const heroH = heroBubble.offsetHeight || 70;
+      setBubble(storyBubble, STORY_LINES[state.line], L.sitX, aboveHead - heroH - 18);
+      return;
+    }
+    heroBubble.hidden = true;
+    setBubble(storyBubble, STORY_LINES[state.line], L.sitX, aboveHead);
+  }
+
+  function setBubble(el, text, x, y) {
+    if (el.dataset.line !== text) {
+      el.dataset.line = text;
+      el.textContent = text;
+      el.classList.remove("pop");
+      void el.offsetWidth;
+      el.classList.add("pop");
+    }
+    el.hidden = false;
+    const half = (el.offsetWidth || 220) / 2;
+    const cx = Math.max(half + 12, Math.min(width - half - 12, x));
+    const top = Math.max(72, y);
+    el.style.left = cx + "px";
+    el.style.top = top + "px";
+  }
+
+  window.addEventListener("resize", function () {
+    layout();
+    if (mode === "pick") drawPortraits();
+  });
+  layout();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

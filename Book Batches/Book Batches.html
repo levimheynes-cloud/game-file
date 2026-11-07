@@ -1,0 +1,2935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Batches</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0e0d0b;
+    overflow: hidden;
+  }
+
+  #title-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(ellipse at center, rgba(255, 252, 245, 0.55), transparent 68%),
+      #efe8dc;
+    color: #1a1714;
+    font-family: Baskerville, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+    opacity: 1;
+    transition: opacity 0.28s ease;
+  }
+
+  #title-screen.is-leaving {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #title-screen[hidden] {
+    display: none;
+  }
+
+  #title-screen::before {
+    content: "";
+    position: absolute;
+    inset: 28px;
+    border: 1px solid rgba(26, 23, 20, 0.38);
+    pointer-events: none;
+  }
+
+  .plate {
+    position: relative;
+    text-align: center;
+    padding: 12px 32px 8px;
+  }
+
+  .rule {
+    width: min(220px, 46vw);
+    height: 1px;
+    margin: 0 auto;
+    background: #1a1714;
+  }
+
+  h1 {
+    margin: 28px 0 26px;
+    font-weight: 400;
+    font-size: clamp(52px, 8vw, 92px);
+    line-height: 0.92;
+    letter-spacing: 0.01em;
+  }
+
+  h1 span {
+    display: block;
+  }
+
+  h1 span + span {
+    margin-top: 0.06em;
+    letter-spacing: 0.045em;
+  }
+
+  .enter {
+    margin-top: 36px;
+    padding: 8px 4px 6px;
+    border: 0;
+    border-bottom: 1px solid #1a1714;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .enter:hover {
+    color: #4a2c24;
+    border-bottom-color: #4a2c24;
+  }
+
+  .enter:focus-visible,
+  .options button:focus-visible,
+  .swatch:focus-visible,
+  .turn:focus-visible,
+  .style-toggle:focus-visible,
+  .export:focus-visible,
+  .corner-link:focus-visible,
+  .volume:focus-visible,
+  .pencil:focus-visible,
+  .draw-dock input:focus-visible {
+    outline: 1px solid #1a1714;
+    outline-offset: 4px;
+  }
+
+  #book-title:focus-visible {
+    outline: none;
+  }
+
+  #studio {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: #d8cfbf;
+    color: #241c16;
+    overflow: hidden;
+  }
+
+  #studio::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 14% 62%, rgba(130, 90, 50, 0.08) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 78% 18%, rgba(110, 70, 40, 0.07) 0 1px, transparent 1.6px),
+      radial-gradient(circle at 64% 78%, rgba(90, 60, 30, 0.06) 0 2px, transparent 3px),
+      radial-gradient(ellipse at center, transparent 46%, rgba(110, 85, 55, 0.16) 100%);
+  }
+
+  #studio[hidden] {
+    display: none;
+  }
+
+  .page-bar {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 16px 28px 0;
+    font-family: Baskerville, "Iowan Old Style", Palatino, "Times New Roman", serif;
+  }
+
+  .page-tools {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .export {
+    flex: 0 0 auto;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 2px 0 3px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .export:hover,
+  .export:focus-visible {
+    border-bottom-color: #1a1714;
+  }
+
+  .export:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .style-toggle {
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 2px 0 3px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .style-toggle[aria-expanded="true"] {
+    border-bottom-color: #1a1714;
+  }
+
+  .choices {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 32px;
+    position: absolute;
+    top: 100%;
+    left: 28px;
+    right: 28px;
+    margin-top: 8px;
+    max-height: calc(100vh - 90px);
+    overflow: auto;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    background: #f4f0e7;
+    box-shadow: 0 8px 22px rgba(40, 28, 16, 0.18);
+  }
+
+  .choices[hidden] {
+    display: none;
+  }
+
+  .desk {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    padding: 14px 24px 62px;
+  }
+
+  .desk-room {
+    flex: 1 1 auto;
+    min-width: 0;
+    container-type: size;
+    display: grid;
+    place-items: center;
+  }
+
+  .sheet {
+    position: relative;
+    aspect-ratio: 420 / 297;
+    width: min(100cqw, calc(100cqh * 420 / 297));
+  }
+
+  .sheet-body {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse at center, rgba(255, 253, 248, 0.6), transparent 72%),
+      #f4f0e7;
+    box-shadow:
+      0 2px 5px rgba(40, 28, 16, 0.16),
+      0 18px 40px rgba(40, 28, 16, 0.26);
+  }
+
+  .sheet.is-spread .sheet-body {
+    background:
+      linear-gradient(90deg, transparent 44%, rgba(110, 80, 50, 0.08) 48.6%, rgba(70, 48, 28, 0.3) 50%, rgba(110, 80, 50, 0.08) 51.4%, transparent 56%),
+      radial-gradient(ellipse at center, rgba(255, 253, 248, 0.6), transparent 72%),
+      #f4f0e7;
+  }
+
+  .sheet.is-cover {
+    aspect-ratio: 210 / 297;
+    width: min(100cqw, calc(100cqh * 210 / 297));
+  }
+
+  .cover-photo {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .cover-photo[hidden] {
+    display: none;
+  }
+
+  .cover-actions {
+    display: flex;
+    gap: 18px;
+  }
+
+  fieldset[hidden],
+  .cover-actions [hidden] {
+    display: none;
+  }
+
+  .cover {
+    container-type: inline-size;
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  #studio.is-turning .sheet {
+    pointer-events: none;
+  }
+
+  #studio.is-turning .choices,
+  #studio.is-turning .turn,
+  #studio.is-turning .save-book {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .choices,
+  .turn {
+    transition: opacity 0.4s ease;
+  }
+
+  .grain {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.4;
+    mix-blend-mode: multiply;
+  }
+
+  .title-plate {
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    top: 14%;
+    bottom: 42%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 2% 3%;
+  }
+
+  #book-title,
+  .page-text {
+    pointer-events: auto;
+  }
+
+  #studio.is-drawing #book-title,
+  #studio.is-drawing .page-text {
+    pointer-events: none;
+  }
+
+  #book-title {
+    --title-size: 10;
+    width: 100%;
+    max-height: 100%;
+    overflow: auto;
+    text-align: center;
+    font-family: Didot, "Bodoni 72", "Bodoni MT", serif;
+    font-size: calc(var(--title-size) * 1cqi);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: 0.14em;
+    color: #241c16;
+    caret-color: currentColor;
+    overflow-wrap: break-word;
+  }
+
+  #book-title[data-empty="true"]::before {
+    content: "Enter Title";
+  }
+
+  .ornament {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 35%;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: 2cqi;
+    pointer-events: none;
+  }
+
+  .ornament span {
+    width: 1.2cqi;
+    height: 1.2cqi;
+    background: #7a3030;
+    transform: rotate(45deg);
+  }
+
+  .cover-back {
+    position: absolute;
+    left: 8%;
+    bottom: 6.5%;
+    z-index: 2;
+    pointer-events: auto;
+    font-size: clamp(11px, 2.8cqw, 15px);
+    letter-spacing: 0.22em;
+  }
+
+  fieldset {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+  }
+
+  legend,
+  .ai-label {
+    margin: 0 4px 0 0;
+    padding: 0;
+    font-size: 12px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+
+  .options,
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+  }
+
+  .options button,
+  .swatch {
+    cursor: pointer;
+  }
+
+  .options button {
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 2px 0 3px;
+    background: none;
+    color: inherit;
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .options button[aria-pressed="true"] {
+    border-bottom-color: #1a1714;
+  }
+
+  .options button:hover {
+    color: #4a2c24;
+  }
+
+  .swatch {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    box-shadow: inset 0 0 0 1px rgba(20, 14, 10, 0.25);
+  }
+
+  .swatch[aria-pressed="true"] {
+    outline: 1px solid #1a1714;
+    outline-offset: 3px;
+  }
+
+  .pencil {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .pencil svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    margin: 4px auto 0;
+  }
+
+  .pencil[aria-pressed="true"],
+  .cool-toggle[aria-expanded="true"],
+  .fill[aria-pressed="true"] {
+    border-bottom-color: #1a1714;
+  }
+
+  .gallery {
+    flex: 1 0 100%;
+    display: grid;
+    gap: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(36, 28, 22, 0.15);
+  }
+
+  .gallery[hidden] {
+    display: none;
+  }
+
+  .sticker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+    gap: 8px;
+  }
+
+  .sticker {
+    padding: 2px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .sticker:hover,
+  .sticker:focus-visible {
+    transform: translateY(-2px) rotate(-4deg);
+  }
+
+  .sticker img {
+    display: block;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  .ai-maker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 14px;
+  }
+
+  .ai-prompt {
+    flex: 1 1 220px;
+    min-width: 0;
+    padding: 4px 0;
+    border: 0;
+    border-bottom: 1px solid #241c16;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+  }
+
+  .ai-status {
+    flex: 1 0 100%;
+    min-height: 1em;
+    font-size: 13px;
+    opacity: 0.7;
+  }
+
+  .photo-import,
+  .cool-toggle,
+  .ai-create,
+  .fill {
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 2px 0 3px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .placed,
+  .photo-hits {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .placed {
+    z-index: 1;
+  }
+
+  .photo-hits {
+    z-index: 4;
+  }
+
+  .photo,
+  .photo-hit {
+    position: absolute;
+    touch-action: none;
+  }
+
+  .photo {
+    pointer-events: none;
+  }
+
+  .photo-hit {
+    pointer-events: auto;
+    cursor: grab;
+  }
+
+  .photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .resize {
+    position: absolute;
+    right: -7px;
+    bottom: -7px;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border: 1px solid #241c16;
+    background: #f4f0e7;
+    cursor: nwse-resize;
+  }
+
+  #studio.is-drawing .photo-hit {
+    pointer-events: none;
+  }
+
+  #ink {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+
+  #studio.is-drawing #ink {
+    pointer-events: auto;
+    cursor: crosshair;
+  }
+
+  #studio.is-filling #ink {
+    cursor: cell;
+  }
+
+  .draw-dock {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #241c16;
+    font-family: Baskerville, "Iowan Old Style", Palatino, "Times New Roman", serif;
+    font-size: 13px;
+  }
+
+  .draw-dock[hidden] {
+    display: none;
+  }
+
+  #ink-color {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #241c16;
+    background: none;
+    cursor: pointer;
+  }
+
+  .px {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  #ink-size {
+    width: 46px;
+    padding: 0 0 2px;
+    border: 0;
+    border-bottom: 1px solid #241c16;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: right;
+  }
+
+  .turns {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    z-index: 4;
+    display: flex;
+    gap: 36px;
+    transform: translateX(-50%);
+  }
+
+  .turn {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #241c16;
+    cursor: pointer;
+    opacity: 0.5;
+  }
+
+  .turn[hidden] {
+    display: none;
+  }
+
+  .turn:hover {
+    opacity: 1;
+  }
+
+  .turn svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    margin: 7px auto;
+  }
+
+  .leaf {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  .leaf[hidden] {
+    display: none;
+  }
+
+  .page-turn {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    pointer-events: none;
+    perspective: 2200px;
+    transform-style: preserve-3d;
+  }
+
+  .turn-hold,
+  .turn-leaf {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+  }
+
+  .turn-hold {
+    z-index: 1;
+    overflow: hidden;
+    background: #f4f0e7;
+  }
+
+  .turn-hold.is-left,
+  .turn-leaf.is-left {
+    left: 0;
+  }
+
+  .turn-hold.is-right,
+  .turn-leaf.is-right {
+    left: 50%;
+  }
+
+  .turn-leaf {
+    z-index: 2;
+    transform-style: preserve-3d;
+    transform-origin: left center;
+  }
+
+  .turn-leaf.is-left {
+    transform-origin: right center;
+  }
+
+  .turn-face {
+    position: absolute;
+    inset: 0;
+    background: #f4f0e7;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .turn-leaf .turn-face {
+    box-shadow:
+      0 1px 0 rgba(255, 252, 245, 0.85) inset,
+      0 18px 30px rgba(40, 28, 16, 0.28);
+  }
+
+  .turn-leaf.is-right .turn-face::after,
+  .turn-leaf.is-left .turn-face::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .turn-leaf.is-right .turn-face::after {
+    background: linear-gradient(90deg, rgba(48, 32, 18, 0.2), rgba(48, 32, 18, 0.05) 16%, transparent 42%);
+  }
+
+  .turn-leaf.is-left .turn-face::after {
+    background: linear-gradient(270deg, rgba(48, 32, 18, 0.2), rgba(48, 32, 18, 0.05) 16%, transparent 42%);
+  }
+
+  .turn-back {
+    transform: rotateY(180deg);
+  }
+
+  .turn-face-fill,
+  .turn-page,
+  .turn-cover {
+    position: absolute;
+    inset: 0;
+  }
+
+  .turn-face-fill {
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at center, rgba(255, 253, 248, 0.55), transparent 72%),
+      #f4f0e7;
+  }
+
+  .turn-page {
+    width: auto;
+    left: 0;
+    right: 0;
+  }
+
+  .turn-ink,
+  .turn-photo,
+  .turn-cover-photo {
+    position: absolute;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .turn-ink {
+    top: 0;
+    height: 100%;
+    max-width: none;
+  }
+
+  .turn-cover-photo {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .page {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    container-type: size;
+  }
+
+  .page.left {
+    left: 0;
+  }
+
+  .page.right {
+    left: 50%;
+  }
+
+  .page-text {
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    top: 10%;
+    bottom: 11%;
+    overflow: auto;
+    outline: none;
+    font-size: 3.4cqw;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    text-align: left;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    caret-color: currentColor;
+  }
+
+  .folio {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 4.5%;
+    text-align: center;
+    font-family: Baskerville, "Iowan Old Style", Palatino, serif;
+    font-size: 2.6cqw;
+    letter-spacing: 0.08em;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .corner-link {
+    border: 0;
+    border-bottom: 1px solid transparent;
+    padding: 2px 0 3px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .corner-link:hover,
+  .corner-link:focus-visible {
+    border-bottom-color: currentColor;
+  }
+
+  .library-open {
+    position: absolute;
+    left: 46px;
+    bottom: 40px;
+    z-index: 1;
+  }
+
+  .save-book {
+    position: absolute;
+    left: 22px;
+    bottom: 18px;
+    z-index: 6;
+    font-family: Baskerville, "Iowan Old Style", Palatino, "Times New Roman", serif;
+  }
+
+  #library {
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    display: grid;
+    place-items: center;
+    overflow: auto;
+    color: #e6d3a8;
+    font-family: Baskerville, "Iowan Old Style", Palatino, "Times New Roman", serif;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(255, 214, 160, 0.18), transparent 46%),
+      linear-gradient(180deg, #4a382c 0%, #2a1d16 42%, #140f0c 100%);
+  }
+
+  #library[hidden] {
+    display: none;
+  }
+
+  .case {
+    width: min(880px, 86vw);
+    margin: 7vh 0 10vh;
+    padding: 26px 18px 20px;
+    background:
+      linear-gradient(90deg, #24160f 0 14px, #4a301c 14px 22px, #3a2618 22px calc(100% - 22px), #4a301c calc(100% - 22px) calc(100% - 14px), #24160f calc(100% - 14px));
+    box-shadow:
+      0 28px 60px rgba(0, 0, 0, 0.5),
+      inset 0 0 0 1px rgba(255, 214, 160, 0.08);
+  }
+
+  .shelf-row {
+    position: relative;
+  }
+
+  .bin {
+    position: absolute;
+    right: 40px;
+    bottom: 11px;
+    width: 74px;
+    height: 100px;
+    filter: drop-shadow(4px 8px 7px rgba(0, 0, 0, 0.45));
+    transition: transform 160ms ease;
+  }
+
+  .bin::before {
+    content: "";
+    position: absolute;
+    inset: 7px 0 0;
+    clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.42), transparent 30%, rgba(255, 236, 200, 0.12) 52%, transparent 70%, rgba(0, 0, 0, 0.45)),
+      repeating-linear-gradient(90deg, #3a3029 0 7px, #241c17 7px 9px);
+  }
+
+  .bin::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -3px;
+    right: -3px;
+    height: 9px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #d4b47c, #8f6f40 60%, #5e4526);
+    box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.6);
+  }
+
+  .bin.is-over {
+    transform: translateY(-4px) scale(1.07);
+  }
+
+  .bin.is-over::after {
+    background: linear-gradient(180deg, #f0d29a, #b88f52 60%, #7a5a30);
+    box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.8), 0 0 14px rgba(255, 214, 160, 0.55);
+  }
+
+  .shelf-row:first-child .books {
+    padding-right: 130px;
+  }
+
+  .volume {
+    touch-action: none;
+  }
+
+  .volume.is-lifted {
+    opacity: 0.25;
+  }
+
+  .volume-ghost {
+    position: fixed;
+    z-index: 50;
+    margin: 0;
+    pointer-events: none;
+    transform: rotate(-4deg);
+    box-shadow:
+      inset 0 5px 0 #cbb98a,
+      inset 0 -4px 0 #2a2118,
+      10px 18px 22px rgba(0, 0, 0, 0.5);
+  }
+
+  .bin-confirm {
+    width: min(380px, 86vw);
+    padding: 28px 30px 22px;
+    border: 0;
+    color: #241c16;
+    font-family: Baskerville, "Iowan Old Style", Palatino, "Times New Roman", serif;
+    background: #f4efe4;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  .bin-confirm::backdrop {
+    background: rgba(12, 8, 6, 0.6);
+  }
+
+  .bin-confirm p {
+    margin: 0 0 24px;
+    font-size: 18px;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .bin-actions {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+  }
+
+  .bin-delete {
+    color: #7a1f1f;
+  }
+
+  .shelf-row + .shelf-row {
+    margin-top: 8px;
+  }
+
+  .books {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    min-height: 196px;
+    padding: 0 28px;
+  }
+
+  .plank {
+    height: 18px;
+    margin-top: -7px;
+    background:
+      linear-gradient(180deg, rgba(255, 226, 180, 0.35), transparent 28%),
+      linear-gradient(180deg, #a07848, #6b4a2c 46%, #3d2818);
+    box-shadow:
+      0 12px 14px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 232, 196, 0.45);
+  }
+
+  .volume {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 180px;
+    padding: 12px 7px 8px 4px;
+    border: 0;
+    cursor: pointer;
+    color: var(--letter);
+    background:
+      repeating-linear-gradient(180deg, transparent 0 22%, rgba(0, 0, 0, 0.28) 22% 23.2%, transparent 23.2% 48%, rgba(0, 0, 0, 0.28) 48% 49.2%, transparent 49.2% 74%, rgba(0, 0, 0, 0.28) 74% 75.2%, transparent 75.2%),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent 24%, transparent 72%, rgba(0, 0, 0, 0.38)),
+      var(--cloth);
+    box-shadow:
+      inset 0 5px 0 #cbb98a,
+      inset 0 -4px 0 #2a2118,
+      4px 8px 8px rgba(0, 0, 0, 0.38);
+  }
+
+  .volume::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    bottom: 0;
+    right: 0;
+    width: 4px;
+    background: repeating-linear-gradient(#f4f0e6, #f4f0e6 1px, #d9d0c0 2px);
+  }
+
+  .spine-title {
+    writing-mode: vertical-rl;
+    max-height: 78%;
+    overflow: hidden;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    line-height: 1.15;
+    text-transform: uppercase;
+  }
+
+  .shelf-return {
+    position: absolute;
+    left: 28px;
+    bottom: 22px;
+  }
+
+  .shelf-backup {
+    position: absolute;
+    right: 28px;
+    bottom: 22px;
+    display: flex;
+    gap: 26px;
+  }
+
+  .shelf-note {
+    position: absolute;
+    left: 50%;
+    bottom: 60px;
+    width: min(520px, 84vw);
+    margin: 0;
+    transform: translateX(-50%);
+    font-size: 13px;
+    font-style: italic;
+    letter-spacing: 0.02em;
+    text-align: center;
+    opacity: 0.8;
+  }
+
+  @media (max-width: 760px) {
+    .page-bar {
+      padding: 12px 16px 0;
+    }
+
+    .choices {
+      gap: 8px 18px;
+    }
+
+    .draw-dock {
+      bottom: 56px;
+    }
+
+    #title-screen::before {
+      inset: 14px;
+    }
+
+    .library-open {
+      left: 22px;
+      bottom: 22px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #title-screen,
+    .sheet,
+    .choices,
+    .turn {
+      transition: none;
+    }
+  }
+</style>
+</head>
+<body>
+  <section id="title-screen" aria-label="Title">
+    <div class="plate">
+      <div class="rule" aria-hidden="true"></div>
+      <h1>
+        <span>Book</span>
+        <span>Batches</span>
+      </h1>
+      <div class="rule" aria-hidden="true"></div>
+      <button class="enter" type="button">Enter</button>
+    </div>
+    <button class="corner-link library-open" id="open-library" type="button">Library</button>
+  </section>
+
+  <section id="library" hidden aria-label="Library">
+    <div class="case">
+      <div class="shelf-row">
+        <div class="books"></div>
+        <div class="bin" id="shelf-bin" role="img" aria-label="Bin: drag a book here to delete it"></div>
+        <div class="plank"></div>
+      </div>
+      <div class="shelf-row"><div class="books"></div><div class="plank"></div></div>
+      <div class="shelf-row"><div class="books"></div><div class="plank"></div></div>
+    </div>
+    <button class="corner-link shelf-return" id="leave-library" type="button">Return</button>
+    <p class="shelf-note" id="shelf-note" role="status"></p>
+    <div class="shelf-backup">
+      <button class="corner-link" id="back-up-shelf" type="button">Back up</button>
+      <button class="corner-link" id="restore-shelf" type="button">Restore</button>
+      <input id="restore-file" type="file" accept="application/json,.json" hidden>
+    </div>
+    <dialog class="bin-confirm" id="bin-confirm" aria-labelledby="bin-question">
+      <form method="dialog">
+        <p id="bin-question"></p>
+        <div class="bin-actions">
+          <button class="corner-link" id="bin-cancel" value="cancel" autofocus>Cancel</button>
+          <button class="corner-link bin-delete" value="delete">Delete</button>
+        </div>
+      </form>
+    </dialog>
+  </section>
+
+  <main id="studio" hidden>
+    <svg class="grain" aria-hidden="true">
+      <filter id="paperGrain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="4" seed="3"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.34  0 0 0 0 0.24  0 0 0 0.22 0"/>
+      </filter>
+      <rect width="100%" height="100%" filter="url(#paperGrain)"/>
+    </svg>
+    <div class="page-bar">
+      <div class="page-tools">
+      <button class="style-toggle" type="button" aria-expanded="false" aria-controls="choices">Color/Font</button>
+      <div class="choices" id="choices" hidden>
+        <fieldset>
+          <legend>Font</legend>
+          <div class="options" id="fonts">
+            <button type="button" data-font="Baskerville, 'Iowan Old Style', Palatino, serif" data-tracking="0.06em" style="font-family: Baskerville, 'Iowan Old Style', Palatino, serif">Baskerville</button>
+            <button type="button" data-font="Didot, 'Bodoni 72', 'Bodoni MT', serif" data-tracking="0.14em" style="font-family: Didot, 'Bodoni 72', 'Bodoni MT', serif" aria-pressed="true">Didot</button>
+            <button type="button" data-font="Palatino, 'Palatino Linotype', 'Book Antiqua', serif" data-tracking="0.01em" style="font-family: Palatino, 'Palatino Linotype', serif">Palatino</button>
+            <button type="button" data-font="'Bodoni 72', Bodoni, Didot, serif" data-tracking="0.03em" style="font-family: 'Bodoni 72', Bodoni, Didot, serif">Bodoni</button>
+            <button type="button" data-font="Copperplate, 'Copperplate Gothic Light', serif" data-tracking="0.08em" style="font-family: Copperplate, 'Copperplate Gothic Light', serif">Copperplate</button>
+            <button type="button" data-font="Optima, Candara, sans-serif" data-tracking="0.04em" style="font-family: Optima, Candara, sans-serif">Optima</button>
+            <button type="button" data-font="'Gill Sans', 'Gill Sans MT', Calibri, sans-serif" data-tracking="0.03em" style="font-family: 'Gill Sans', 'Gill Sans MT', Calibri, sans-serif">Gill Sans</button>
+            <button type="button" data-font="'Hoefler Text', 'Iowan Old Style', Baskerville, serif" data-tracking="0.01em" style="font-family: 'Hoefler Text', 'Iowan Old Style', Baskerville, serif">Hoefler</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Color</legend>
+          <div class="swatches" id="colors">
+            <button type="button" class="swatch" data-color="#241c16" style="background:#241c16" aria-label="Ink" aria-pressed="true"></button>
+            <button type="button" class="swatch" data-color="#7a2430" style="background:#7a2430" aria-label="Burgundy"></button>
+            <button type="button" class="swatch" data-color="#1b3348" style="background:#1b3348" aria-label="Navy"></button>
+            <button type="button" class="swatch" data-color="#1d3c34" style="background:#1d3c34" aria-label="Forest"></button>
+            <button type="button" class="swatch" data-color="#8d6b2f" style="background:#8d6b2f" aria-label="Gold"></button>
+            <button type="button" class="swatch" data-color="#6a4a32" style="background:#6a4a32" aria-label="Umber"></button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Photo</legend>
+          <button class="photo-import" id="import-photo" type="button">Import</button>
+          <input id="photo-file" type="file" accept="image/*" multiple hidden>
+        </fieldset>
+        <fieldset id="cover-tools">
+          <legend>Cover</legend>
+          <div class="cover-actions">
+            <button class="photo-import" id="cover-photo-button" type="button">Cover</button>
+            <button class="photo-import" id="cover-photo-remove" type="button" hidden>Remove</button>
+          </div>
+          <input id="cover-file" type="file" accept="image/*" hidden>
+        </fieldset>
+        <fieldset>
+          <legend>Art</legend>
+          <button class="cool-toggle" id="cool-toggle" type="button" aria-expanded="false" aria-controls="gallery">Cool images</button>
+        </fieldset>
+        <fieldset>
+          <legend>Pencil</legend>
+          <button class="pencil" id="pencil" type="button" aria-pressed="false" aria-label="Pencil">
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M11.2 2 L14 4.8 L5.6 13.2 L2.2 13.8 L2.8 10.4 Z" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/>
+              <path d="M9.4 3.8 L12.2 6.6" fill="none" stroke="currentColor" stroke-width="1.15"/>
+            </svg>
+          </button>
+        </fieldset>
+        <div class="gallery" id="gallery" hidden>
+          <div class="sticker-grid" id="sticker-grid" aria-label="Cool images"></div>
+          <form class="ai-maker" id="ai-maker">
+            <label class="ai-label" for="ai-prompt">Ask AI</label>
+            <input class="ai-prompt" id="ai-prompt" type="text" maxlength="300" autocomplete="off" placeholder="A dragon reading a book under the moon">
+            <button class="ai-create" id="ai-create" type="submit">Create</button>
+            <span class="ai-status" id="ai-status" role="status"></span>
+          </form>
+        </div>
+      </div>
+      </div>
+      <button class="export" id="export-book" type="button">Export</button>
+    </div>
+
+    <div class="desk">
+      <div class="desk-room">
+        <div class="sheet is-cover" id="sheet">
+          <div class="sheet-body" id="sheet-body">
+          <img class="cover-photo" id="cover-photo" alt="" hidden>
+          <div class="placed" id="placed"></div>
+          <canvas id="ink" aria-hidden="true"></canvas>
+
+          <div class="cover">
+            <label class="title-plate">
+              <div id="book-title" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Book title" data-empty="true" spellcheck="false"></div>
+            </label>
+            <div class="ornament" aria-hidden="true"><span></span><span></span><span></span></div>
+            <button class="corner-link cover-back" id="cover-back" type="button">Back</button>
+          </div>
+
+          <div class="leaf" id="leaf" hidden>
+            <div class="page left">
+              <div class="page-text" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Left page" spellcheck="true"></div>
+              <span class="folio" aria-hidden="true"></span>
+            </div>
+            <div class="page right">
+              <div class="page-text" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Right page" spellcheck="true"></div>
+              <span class="folio" aria-hidden="true"></span>
+            </div>
+          </div>
+
+          <div class="photo-hits" id="photo-hits"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="draw-dock" id="draw-dock" hidden>
+      <input id="ink-color" type="color" value="#241c16" aria-label="Draw color">
+      <button class="fill" id="fill-tool" type="button" aria-pressed="false">Fill</button>
+      <label class="px">
+        <input id="ink-size" type="number" min="1" max="120" step="1" value="18" aria-label="Draw size in pixels">
+        <span>px</span>
+      </label>
+    </div>
+
+    <button class="corner-link save-book" id="save-book" type="button">Save</button>
+
+    <div class="turns">
+      <button class="turn back" type="button" aria-label="Previous page" hidden>
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M10.5 3.5 L5.5 8 L10.5 12.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="turn next" type="button" aria-label="Next page">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M5.5 3.5 L10.5 8 L5.5 12.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </main>
+
+  <script src="book-stickers.js"></script>
+  <script src="book-ink.js"></script>
+  <script src="book-ai.js"></script>
+  <script src="book-library.js"></script>
+  <script src="book-sounds.js"></script>
+  <script src="book-bin.js"></script>
+  <script>
+    const titleScreen = document.getElementById("title-screen");
+    const studio = document.getElementById("studio");
+    const enterButton = document.querySelector(".enter");
+    const titleField = document.getElementById("book-title");
+    const pageTexts = [...document.querySelectorAll(".page-text")];
+    const folios = [...document.querySelectorAll(".folio")];
+    const sheet = document.getElementById("sheet");
+    const sheetBody = document.getElementById("sheet-body");
+    const leaf = document.getElementById("leaf");
+    const cover = document.querySelector(".cover");
+    const coverPhotoImage = document.getElementById("cover-photo");
+    const coverTools = document.getElementById("cover-tools");
+    const coverFile = document.getElementById("cover-file");
+    const removeCoverButton = document.getElementById("cover-photo-remove");
+    let coverPhoto = "";
+    const DEFAULT_STYLE = { font: "Didot, 'Bodoni 72', 'Bodoni MT', serif", tracking: "0.14em", color: "#241c16" };
+    let baseStyle = { ...DEFAULT_STYLE };
+    const choices = document.querySelector(".choices");
+    const styleToggle = document.querySelector(".style-toggle");
+    const backButton = document.querySelector(".turn.back");
+    const nextButton = document.querySelector(".turn.next");
+    const pageBodies = [];
+    const drawings = [];
+    const photoSets = [];
+    let pageIndex = 0;
+    let drawingMode = false;
+    let fillMode = false;
+    let strokeActive = false;
+    let lastPoint = null;
+    let inkDirty = false;
+    let drawToken = 0;
+    const pencil = document.getElementById("pencil");
+    const ink = document.getElementById("ink");
+    const drawDock = document.getElementById("draw-dock");
+    const inkColor = document.getElementById("ink-color");
+    const inkSize = document.getElementById("ink-size");
+    const fillButton = document.getElementById("fill-tool");
+    const placed = document.getElementById("placed");
+    const photoHits = document.getElementById("photo-hits");
+    const photoFile = document.getElementById("photo-file");
+    const importPhoto = document.getElementById("import-photo");
+    const exportButton = document.getElementById("export-book");
+    const library = document.getElementById("library");
+    const saveBookButton = document.getElementById("save-book");
+    const openLibraryButton = document.getElementById("open-library");
+    const leaveLibraryButton = document.getElementById("leave-library");
+    const shelfNote = document.getElementById("shelf-note");
+    const restoreFile = document.getElementById("restore-file");
+    let exporting = false;
+    let currentBookId = null;
+    let libraryBooks = [];
+    let photoDrag = null;
+    const fontButtons = document.querySelectorAll("#fonts button");
+    const colorButtons = document.querySelectorAll("#colors button");
+    const textEditors = [titleField, ...pageTexts];
+    let heldRange = null;
+    let selectingText = false;
+
+    function leaveTitle() {
+      if (titleScreen.hidden || titleScreen.classList.contains("is-leaving")) return;
+      titleScreen.classList.add("is-leaving");
+      const finish = () => {
+        beginNewBook();
+        titleScreen.hidden = true;
+        studio.hidden = false;
+        revealCurrentPage();
+        titleField.focus();
+      };
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        finish();
+        return;
+      }
+      titleScreen.addEventListener("transitionend", finish, { once: true });
+    }
+
+    function selectFont(button) {
+      fontButtons.forEach((item) => item.setAttribute("aria-pressed", "false"));
+      button.setAttribute("aria-pressed", "true");
+    }
+
+    function selectColor(button) {
+      colorButtons.forEach((item) => item.setAttribute("aria-pressed", "false"));
+      button.setAttribute("aria-pressed", "true");
+    }
+
+    function penStyle() {
+      const font = document.querySelector("#fonts button[aria-pressed='true']");
+      const color = document.querySelector("#colors button[aria-pressed='true']");
+      return {
+        font: font ? font.dataset.font : DEFAULT_STYLE.font,
+        tracking: font ? font.dataset.tracking : DEFAULT_STYLE.tracking,
+        color: color ? color.dataset.color : DEFAULT_STYLE.color
+      };
+    }
+
+    function selectPen(style) {
+      const font = [...fontButtons].find((button) => button.dataset.font === style.font);
+      const color = [...colorButtons].find((button) => button.dataset.color === style.color);
+      selectFont(font || fontButtons[1]);
+      selectColor(color || colorButtons[0]);
+    }
+
+    function setBaseStyle(style) {
+      baseStyle = { ...DEFAULT_STYLE, ...style };
+      titleField.style.fontFamily = baseStyle.font;
+      titleField.style.letterSpacing = baseStyle.tracking;
+      titleField.style.color = baseStyle.color;
+      pageTexts.forEach((text) => {
+        text.style.fontFamily = baseStyle.font;
+        text.style.color = baseStyle.color;
+      });
+    }
+
+    function setStylesOpen(open) {
+      styleToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      choices.hidden = !open;
+      if (!open) setGalleryOpen(false);
+    }
+
+    function setGalleryOpen(open) {
+      const toggle = document.getElementById("cool-toggle");
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      document.getElementById("gallery").hidden = !open;
+    }
+
+    function fitTitle() {
+      const length = titleField.textContent.length;
+      let size = 10;
+      if (length > 48) size = 4.2;
+      else if (length > 32) size = 5.4;
+      else if (length > 18) size = 6.8;
+      else if (length > 12) size = 8.2;
+      titleField.style.setProperty("--title-size", size);
+    }
+
+    function spreadBodies(body) {
+      if (Array.isArray(body)) return [body[0] || "", body[1] || ""];
+      return [body || "", ""];
+    }
+
+    function sheetSize() {
+      return { width: sheet.clientWidth, height: sheet.clientHeight };
+    }
+
+    function setPhotoBox(element, x, y, width) {
+      element.style.left = x * 100 + "%";
+      element.style.top = y * 100 + "%";
+      element.style.width = width * 100 + "%";
+    }
+
+    function savePhotos() {
+      const { width, height } = sheetSize();
+      if (!width || !height) return;
+      photoSets[pageIndex] = [...placed.children].map((photo) => ({
+        src: photo.dataset.src,
+        x: photo.offsetLeft / width,
+        y: photo.offsetTop / height,
+        width: photo.offsetWidth / width
+      }));
+    }
+
+    function addPhoto(src, x, y, width) {
+      const photo = document.createElement("div");
+      photo.className = "photo";
+      photo.dataset.src = src;
+      setPhotoBox(photo, x, y, width);
+      const image = document.createElement("img");
+      image.src = src;
+      image.alt = "";
+      photo.append(image);
+      placed.append(photo);
+      const hit = document.createElement("div");
+      hit.className = "photo-hit";
+      setPhotoBox(hit, x, y, width);
+      const handle = document.createElement("button");
+      handle.type = "button";
+      handle.className = "resize";
+      handle.setAttribute("aria-label", "Resize picture");
+      hit.append(handle);
+      photoHits.append(hit);
+      const matchShape = () => {
+        if (image.naturalWidth) hit.style.aspectRatio = image.naturalWidth + " / " + image.naturalHeight;
+      };
+      image.addEventListener("load", matchShape);
+      matchShape();
+      hit.photo = photo;
+    }
+
+    function restorePhotos() {
+      placed.replaceChildren();
+      photoHits.replaceChildren();
+      const { width, height } = sheetSize();
+      (photoSets[pageIndex] || []).forEach((photo) => {
+        const legacy = photo.width > 1.5 && width && height;
+        addPhoto(
+          photo.src,
+          legacy ? photo.x / width : photo.x,
+          legacy ? photo.y / height : photo.y,
+          legacy ? photo.width / width : photo.width
+        );
+      });
+    }
+
+    function placeImportedPhoto(src, share = 0.6) {
+      const { width } = sheetSize();
+      const pageWidth = pageIndex === 0 ? width : width / 2;
+      const photoWidth = Math.min(280, pageWidth * share) / (width || 1);
+      const offset = placed.children.length * 0.03;
+      const x = (pageIndex === 0 ? (1 - photoWidth) / 2 : 0.25 - photoWidth / 2) + offset;
+      addPhoto(src, x, 0.3 + offset, photoWidth);
+    }
+
+    function imageToDataUrl(image, mime) {
+      const maxEdge = 1400;
+      const naturalWidth = image.naturalWidth || image.width;
+      const naturalHeight = image.naturalHeight || image.height;
+      const scale = Math.min(1, maxEdge / Math.max(naturalWidth, naturalHeight));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(naturalHeight * scale));
+      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL(mime, 0.86);
+    }
+
+    function readImportedFile(file) {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const image = new Image();
+        image.onload = () => {
+          const mime = file.type === "image/png" ? "image/png" : "image/jpeg";
+          placeImportedPhoto(imageToDataUrl(image, mime));
+        };
+        image.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveCurrentPage() {
+      saveDrawing();
+      savePhotos();
+      if (pageIndex === 0) return;
+      pageBodies[pageIndex - 1] = pageTexts.map((text) => text.innerHTML);
+    }
+
+    function showCoverPhoto() {
+      const onCover = pageIndex === 0;
+      coverTools.hidden = !onCover;
+      removeCoverButton.hidden = !coverPhoto;
+      coverPhotoImage.hidden = !onCover || !coverPhoto;
+      if (coverPhoto && coverPhotoImage.getAttribute("src") !== coverPhoto) coverPhotoImage.src = coverPhoto;
+      if (!coverPhoto) coverPhotoImage.removeAttribute("src");
+    }
+
+    function setCoverPhoto(src) {
+      coverPhoto = src || "";
+      showCoverPhoto();
+    }
+
+    function revealCurrentPage() {
+      const writing = pageIndex > 0;
+      sheet.classList.toggle("is-cover", !writing);
+      sheet.classList.toggle("is-spread", writing);
+      cover.hidden = writing;
+      showCoverPhoto();
+      leaf.hidden = !writing;
+      backButton.hidden = pageIndex === 0;
+      sizeInk();
+      restoreDrawing();
+      restorePhotos();
+      if (!writing) return;
+      const bodies = spreadBodies(pageBodies[pageIndex - 1]);
+      pageTexts.forEach((text, side) => { text.innerHTML = bodies[side]; });
+      folios.forEach((folio, side) => { folio.textContent = String(pageIndex * 2 - 1 + side); });
+    }
+
+    function focusCurrentPage() {
+      if (drawingMode) return;
+      if (pageIndex === 0) titleField.focus();
+      else pageTexts[0].focus();
+    }
+
+    function inkContext() {
+      const ctx = ink.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return ctx;
+    }
+
+    function brushSize() {
+      const size = Number(inkSize.value);
+      return size > 0 ? size : 18;
+    }
+
+    function inkTargetSize() {
+      const { width, height } = sheetSize();
+      const dpr = window.devicePixelRatio || 1;
+      return { width: Math.round(width * dpr), height: Math.round(height * dpr) };
+    }
+
+    function sizeInk() {
+      const target = inkTargetSize();
+      if (target.width < 2 || target.height < 2) return false;
+      if (ink.width === target.width && ink.height === target.height) return false;
+      ink.width = target.width;
+      ink.height = target.height;
+      return true;
+    }
+
+    function handleSheetResize() {
+      if (studio.hidden || studio.classList.contains("is-turning")) return;
+      const target = inkTargetSize();
+      if (target.width < 2 || (ink.width === target.width && ink.height === target.height)) return;
+      saveDrawing();
+      sizeInk();
+      restoreDrawing();
+    }
+
+    function saveDrawing() {
+      if (!inkDirty || !ink.width) return;
+      drawings[pageIndex] = ink.toDataURL();
+    }
+
+    function restoreDrawing() {
+      const token = ++drawToken;
+      const index = pageIndex;
+      const url = drawings[index];
+      const { width, height } = sheetSize();
+      const ctx = inkContext();
+      ctx.clearRect(0, 0, width, height);
+      inkDirty = Boolean(url);
+      if (!url) return;
+      const image = new Image();
+      image.onload = () => {
+        if (token !== drawToken || index !== pageIndex) return;
+        const size = sheetSize();
+        const next = inkContext();
+        next.clearRect(0, 0, size.width, size.height);
+        next.drawImage(image, 0, 0, size.width, size.height);
+      };
+      image.src = url;
+    }
+
+    function canvasPoint(event) {
+      const rect = ink.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    function paint(from, to) {
+      const ctx = inkContext();
+      const size = brushSize();
+      ctx.fillStyle = inkColor.value;
+      ctx.strokeStyle = inkColor.value;
+      ctx.lineWidth = size;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (from.x === to.x && from.y === to.y) {
+        ctx.beginPath();
+        ctx.arc(to.x, to.y, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+    }
+
+    function setFillMode(active) {
+      fillMode = active;
+      fillButton.setAttribute("aria-pressed", active ? "true" : "false");
+      studio.classList.toggle("is-filling", active);
+    }
+
+    function setDrawMode(active) {
+      drawingMode = active;
+      strokeActive = false;
+      if (!active) setFillMode(false);
+      pencil.setAttribute("aria-pressed", active ? "true" : "false");
+      studio.classList.toggle("is-drawing", active);
+      drawDock.hidden = !active;
+    }
+
+    function hexToRgb(hex) {
+      const value = hex.replace("#", "");
+      return {
+        r: parseInt(value.slice(0, 2), 16),
+        g: parseInt(value.slice(2, 4), 16),
+        b: parseInt(value.slice(4, 6), 16)
+      };
+    }
+
+    function floodFill(point) {
+      const dpr = window.devicePixelRatio || 1;
+      const ctx = ink.getContext("2d");
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const width = ink.width;
+      const height = ink.height;
+      const x = Math.round(point.x * dpr);
+      const y = Math.round(point.y * dpr);
+      if (x < 0 || y < 0 || x >= width || y >= height) return;
+      const image = ctx.getImageData(0, 0, width, height);
+      const data = image.data;
+      const start = (y * width + x) * 4;
+      const source = [data[start], data[start + 1], data[start + 2], data[start + 3]];
+      const fill = hexToRgb(inkColor.value);
+      if (source[0] === fill.r && source[1] === fill.g && source[2] === fill.b && source[3] === 255) return;
+      const tolerance = 42;
+      const matches = (index) => Math.abs(data[index] - source[0]) <= tolerance
+        && Math.abs(data[index + 1] - source[1]) <= tolerance
+        && Math.abs(data[index + 2] - source[2]) <= tolerance
+        && Math.abs(data[index + 3] - source[3]) <= tolerance;
+      const seen = new Uint8Array(width * height);
+      const stack = [x, y];
+      let leaked = false;
+      while (stack.length) {
+        const py = stack.pop();
+        let px = stack.pop();
+        const row = py * width;
+        while (px >= 0 && !seen[row + px] && matches((row + px) * 4)) px -= 1;
+        px += 1;
+        let above = false;
+        let below = false;
+        while (px < width && !seen[row + px] && matches((row + px) * 4)) {
+          if (px === 0 || py === 0 || px === width - 1 || py === height - 1) leaked = true;
+          seen[row + px] = 1;
+          const index = (row + px) * 4;
+          data[index] = fill.r;
+          data[index + 1] = fill.g;
+          data[index + 2] = fill.b;
+          data[index + 3] = 255;
+          if (py > 0) {
+            const up = (py - 1) * width + px;
+            if (!seen[up] && matches(up * 4)) {
+              if (!above) {
+                stack.push(px, py - 1);
+                above = true;
+              }
+            } else above = false;
+          }
+          if (py < height - 1) {
+            const down = (py + 1) * width + px;
+            if (!seen[down] && matches(down * 4)) {
+              if (!below) {
+                stack.push(px, py + 1);
+                below = true;
+              }
+            } else below = false;
+          }
+          px += 1;
+        }
+        if (leaked) return;
+      }
+      ctx.putImageData(image, 0, 0);
+      inkDirty = true;
+      saveDrawing();
+    }
+
+    const TURN_MS = 860;
+    const TURN_EASE = "cubic-bezier(0.45, 0.02, 0.2, 1)";
+
+    function pageSnapshot() {
+      return {
+        cover: pageIndex === 0,
+        coverHTML: cover.innerHTML,
+        coverPhoto: pageIndex === 0 ? coverPhoto : "",
+        left: pageTexts[0].innerHTML,
+        right: pageTexts[1].innerHTML,
+        fontFamily: pageTexts[0].style.fontFamily,
+        color: pageTexts[0].style.color,
+        folios: [folios[0].textContent, folios[1].textContent],
+        ink: drawings[pageIndex] || "",
+        photos: (photoSets[pageIndex] || []).map((photo) => ({
+          src: photo.src,
+          x: photo.x,
+          y: photo.y,
+          width: photo.width
+        }))
+      };
+    }
+
+    function coverSnapshot() {
+      return {
+        cover: true,
+        coverHTML: cover.innerHTML,
+        coverPhoto,
+        fontFamily: "",
+        color: "",
+        folios: ["", ""],
+        ink: drawings[0] || "",
+        photos: (photoSets[0] || []).map((photo) => ({
+          src: photo.src,
+          x: photo.x,
+          y: photo.y,
+          width: photo.width
+        }))
+      };
+    }
+
+    function buildFace(snap, side) {
+      const fill = document.createElement("div");
+      fill.className = "turn-face-fill";
+      if (side === "cover" && snap.coverPhoto) {
+        const photo = document.createElement("img");
+        photo.className = "turn-cover-photo";
+        photo.alt = "";
+        photo.src = snap.coverPhoto;
+        fill.append(photo);
+      }
+      (snap.photos || []).forEach((photo) => {
+        const image = document.createElement("img");
+        image.className = "turn-photo";
+        image.alt = "";
+        image.src = photo.src;
+        const origin = side === "right" ? 0.5 : 0;
+        image.style.left = (side === "cover" ? photo.x * 100 : (photo.x - origin) * 200) + "%";
+        image.style.top = photo.y * 100 + "%";
+        image.style.width = (side === "cover" ? photo.width * 100 : photo.width * 200) + "%";
+        fill.append(image);
+      });
+      if (snap.ink) {
+        const inkImage = document.createElement("img");
+        inkImage.className = "turn-ink";
+        inkImage.alt = "";
+        inkImage.src = snap.ink;
+        inkImage.style.width = side === "cover" ? "100%" : "200%";
+        inkImage.style.left = side === "right" ? "-100%" : "0";
+        fill.append(inkImage);
+      }
+      if (side === "cover") {
+        const copy = document.createElement("div");
+        copy.className = "cover turn-cover";
+        copy.innerHTML = snap.coverHTML;
+        copy.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+        copy.querySelectorAll("button").forEach((node) => node.remove());
+        copy.querySelectorAll("[contenteditable]").forEach((node) => node.setAttribute("contenteditable", "false"));
+        fill.append(copy);
+      } else {
+        const page = document.createElement("div");
+        page.className = "page turn-page";
+        page.style.left = "0";
+        page.style.right = "0";
+        page.style.width = "auto";
+        const text = document.createElement("div");
+        text.className = "page-text";
+        text.style.fontFamily = snap.fontFamily || "";
+        text.style.color = snap.color || "";
+        text.innerHTML = side === "left" ? (snap.left || "") : (snap.right || "");
+        const folio = document.createElement("span");
+        folio.className = "folio";
+        folio.textContent = (snap.folios || [])[side === "left" ? 0 : 1] || "";
+        page.append(text, folio);
+        fill.append(page);
+      }
+      return fill;
+    }
+
+    function turnPanel(className, snap, side) {
+      const panel = document.createElement("div");
+      panel.className = className;
+      const face = document.createElement("div");
+      face.className = "turn-face" + (className.indexOf("back") >= 0 ? " turn-back" : " turn-front");
+      face.append(buildFace(snap, side));
+      panel.append(face);
+      return panel;
+    }
+
+    function turningLeaf(side, frontSnap, frontSide, backSnap, backSide) {
+      const panel = document.createElement("div");
+      panel.className = "turn-leaf is-" + side;
+      const front = document.createElement("div");
+      front.className = "turn-face turn-front";
+      front.append(buildFace(frontSnap, frontSide));
+      const back = document.createElement("div");
+      back.className = "turn-face turn-back";
+      back.append(buildFace(backSnap, backSide));
+      panel.append(front, back);
+      return panel;
+    }
+
+    function clearTurnMotion() {
+      [sheet, sheetBody].forEach((element) => {
+        element.getAnimations().forEach((animation) => {
+          try { animation.cancel(); } catch (error) {}
+        });
+      });
+      sheet.style.transform = "";
+      sheetBody.style.clipPath = "";
+    }
+
+    function settleTurn(overlay, revealAfter) {
+      if (!studio.classList.contains("is-turning")) return;
+      clearTurnMotion();
+      overlay.remove();
+      document.querySelectorAll(".page").forEach((page) => { page.style.visibility = ""; });
+      if (revealAfter) revealCurrentPage();
+      setStylesOpen(false);
+      studio.classList.remove("is-turning", "turn-back");
+      focusCurrentPage();
+    }
+
+    function runTurn(overlay, leaf, frames, motion, revealAfter) {
+      const animation = leaf.animate(frames, { duration: TURN_MS, easing: TURN_EASE, fill: "forwards" });
+      motion.forEach((item) => {
+        item.element.animate(item.frames, { duration: TURN_MS, easing: TURN_EASE, fill: "forwards" });
+      });
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        settleTurn(overlay, revealAfter);
+      };
+      animation.onfinish = finish;
+      window.setTimeout(finish, TURN_MS + 140);
+    }
+
+    function playLeafTurn(from, to, turningBack) {
+      const overlay = document.createElement("div");
+      overlay.className = "page-turn";
+      overlay.setAttribute("aria-hidden", "true");
+      const leaf = turningBack
+        ? turningLeaf("left", from, "left", to, "right")
+        : turningLeaf("right", from, "right", to, "left");
+      const staying = turnPanel(
+        turningBack ? "turn-hold is-right" : "turn-hold is-left",
+        from,
+        turningBack ? "right" : "left"
+      );
+      overlay.append(staying, leaf);
+      sheet.append(overlay);
+      runTurn(overlay, leaf, turningBack
+        ? [{ transform: "rotateY(0deg)" }, { transform: "rotateY(180deg)" }]
+        : [{ transform: "rotateY(0deg)" }, { transform: "rotateY(-180deg)" }], [], false);
+    }
+
+    function bookMotion(opening) {
+      const closed = { transform: "translateX(-25%)" };
+      const open = { transform: "translateX(0%)" };
+      const shut = { clipPath: "inset(0 0 0 50%)" };
+      const wide = { clipPath: "inset(0 0 0 0%)" };
+      if (opening) {
+        return [
+          { element: sheet, frames: [{ ...closed, offset: 0 }, { ...closed, offset: 0.4 }, { ...open, offset: 1 }] },
+          { element: sheetBody, frames: [{ ...shut, offset: 0 }, { ...shut, offset: 0.4 }, { ...wide, offset: 1 }] }
+        ];
+      }
+      return [
+        { element: sheet, frames: [{ ...open, offset: 0 }, { ...open, offset: 0.4 }, { ...closed, offset: 1 }] },
+        { element: sheetBody, frames: [{ ...wide, offset: 0 }, { ...wide, offset: 0.4 }, { ...shut, offset: 1 }] }
+      ];
+    }
+
+    function playCoverTurn(from, turningBack) {
+      const overlay = document.createElement("div");
+      overlay.className = "page-turn";
+      overlay.setAttribute("aria-hidden", "true");
+      if (!turningBack) {
+        revealCurrentPage();
+        const to = pageSnapshot();
+        const leaf = turningLeaf("right", from, "cover", to, "left");
+        overlay.append(leaf);
+        sheet.append(overlay);
+        sheet.style.transform = "translateX(-25%)";
+        sheetBody.style.clipPath = "inset(0 0 0 50%)";
+        runTurn(overlay, leaf, [
+          { transform: "rotateY(0deg)", offset: 0 },
+          { transform: "rotateY(-68deg)", offset: 0.4 },
+          { transform: "rotateY(-180deg)", offset: 1 }
+        ], bookMotion(true), false);
+        return;
+      }
+      document.querySelector(".page.left").style.visibility = "hidden";
+      const leaf = turningLeaf("left", from, "left", coverSnapshot(), "cover");
+      overlay.append(turnPanel("turn-hold is-right", from, "right"), leaf);
+      sheet.append(overlay);
+      runTurn(overlay, leaf, [
+        { transform: "rotateY(0deg)", offset: 0 },
+        { transform: "rotateY(68deg)", offset: 0.4 },
+        { transform: "rotateY(180deg)", offset: 1 }
+      ], bookMotion(false), true);
+    }
+
+    function goToPage(nextIndex) {
+      if (studio.classList.contains("is-turning") || nextIndex < 0 || nextIndex === pageIndex) return;
+      saveCurrentPage();
+      if (nextIndex > pageBodies.length) pageBodies.push(["", ""]);
+      const turningBack = nextIndex < pageIndex;
+      const from = pageSnapshot();
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        pageIndex = nextIndex;
+        revealCurrentPage();
+        setStylesOpen(false);
+        focusCurrentPage();
+        return;
+      }
+      pageIndex = nextIndex;
+      studio.classList.add("is-turning");
+      studio.classList.toggle("turn-back", turningBack);
+      if (from.cover || pageIndex === 0) playCoverTurn(from, turningBack);
+      else {
+        revealCurrentPage();
+        playLeafTurn(from, pageSnapshot(), turningBack);
+      }
+    }
+
+    function insertPlainText(event, after) {
+      event.preventDefault();
+      const editor = event.currentTarget;
+      const text = event.clipboardData.getData("text/plain");
+      if (BookInk.insertText(editor, text, penStyle(), baseStyle, editor === titleField)) after();
+    }
+
+    function markEmpty() {
+      const empty = titleField.textContent.trim() === "";
+      titleField.dataset.empty = empty ? "true" : "false";
+      if (empty) titleField.textContent = "";
+    }
+
+    BookInk.followPen(titleField, penStyle, () => baseStyle, true);
+    pageTexts.forEach((text) => BookInk.followPen(text, penStyle, () => baseStyle, false));
+
+    titleField.addEventListener("input", () => {
+      markEmpty();
+      fitTitle();
+    });
+
+    titleField.addEventListener("paste", (event) => {
+      insertPlainText(event, () => {
+        markEmpty();
+        fitTitle();
+      });
+    });
+
+    pageTexts.forEach((text) => {
+      text.addEventListener("paste", (event) => {
+        insertPlainText(event, () => {});
+      });
+    });
+
+    pencil.addEventListener("click", () => setDrawMode(!drawingMode));
+    fillButton.addEventListener("click", () => setFillMode(!fillMode));
+    document.getElementById("cover-photo-button").addEventListener("click", () => coverFile.click());
+
+    coverFile.addEventListener("change", async () => {
+      const file = coverFile.files[0];
+      coverFile.value = "";
+      if (!file || !file.type.startsWith("image/")) return;
+      const url = URL.createObjectURL(file);
+      try {
+        setCoverPhoto(imageToDataUrl(await loadImage(url), "image/jpeg"));
+      } catch (error) {
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    });
+
+    removeCoverButton.addEventListener("click", () => setCoverPhoto(""));
+
+    importPhoto.addEventListener("click", () => photoFile.click());
+    photoFile.addEventListener("change", () => {
+      [...photoFile.files].forEach(readImportedFile);
+      photoFile.value = "";
+    });
+
+    photoHits.addEventListener("pointerdown", (event) => {
+      const hit = event.target.closest(".photo-hit");
+      if (!hit || drawingMode) return;
+      event.preventDefault();
+      photoDrag = {
+        photo: hit.photo,
+        hit,
+        resize: Boolean(event.target.closest(".resize")),
+        x: event.clientX,
+        y: event.clientY,
+        left: hit.photo.offsetLeft,
+        top: hit.photo.offsetTop,
+        width: hit.photo.offsetWidth
+      };
+      try { hit.setPointerCapture(event.pointerId); } catch (error) {}
+    });
+
+    photoHits.addEventListener("pointermove", (event) => {
+      if (!photoDrag) return;
+      const { width, height } = sheetSize();
+      if (!width || !height) return;
+      const dx = event.clientX - photoDrag.x;
+      const dy = event.clientY - photoDrag.y;
+      if (photoDrag.resize) {
+        const next = Math.max(48, photoDrag.width + dx) / width * 100 + "%";
+        photoDrag.photo.style.width = next;
+        photoDrag.hit.style.width = next;
+        return;
+      }
+      const left = (photoDrag.left + dx) / width * 100 + "%";
+      const top = (photoDrag.top + dy) / height * 100 + "%";
+      photoDrag.photo.style.left = left;
+      photoDrag.photo.style.top = top;
+      photoDrag.hit.style.left = left;
+      photoDrag.hit.style.top = top;
+    });
+
+    function endPhotoDrag() {
+      photoDrag = null;
+    }
+
+    photoHits.addEventListener("pointerup", endPhotoDrag);
+    photoHits.addEventListener("pointercancel", endPhotoDrag);
+
+    ink.addEventListener("pointerdown", (event) => {
+      if (!drawingMode) return;
+      event.preventDefault();
+      if (fillMode) {
+        floodFill(canvasPoint(event));
+        return;
+      }
+      try { ink.setPointerCapture(event.pointerId); } catch (error) {}
+      strokeActive = true;
+      lastPoint = canvasPoint(event);
+      paint(lastPoint, lastPoint);
+      inkDirty = true;
+    });
+
+    ink.addEventListener("pointermove", (event) => {
+      if (!strokeActive) return;
+      const next = canvasPoint(event);
+      paint(lastPoint, next);
+      lastPoint = next;
+      inkDirty = true;
+    });
+
+    function endStroke() {
+      if (!strokeActive) return;
+      strokeActive = false;
+      saveDrawing();
+    }
+
+    ink.addEventListener("pointerup", endStroke);
+    ink.addEventListener("pointercancel", endStroke);
+
+    new ResizeObserver(handleSheetResize).observe(sheet);
+
+    nextButton.addEventListener("click", () => goToPage(pageIndex + 1));
+    backButton.addEventListener("click", () => goToPage(pageIndex - 1));
+    styleToggle.addEventListener("click", () => {
+      setStylesOpen(styleToggle.getAttribute("aria-expanded") !== "true");
+    });
+
+    function editorFor(node) {
+      return textEditors.find((editor) => editor.contains(node)) || null;
+    }
+
+    function rememberSelection() {
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount || selection.isCollapsed) return;
+      const range = selection.getRangeAt(0);
+      if (editorFor(range.startContainer)) heldRange = range.cloneRange();
+    }
+
+    function syncHeldRange() {
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount || selection.isCollapsed || !editorFor(selection.anchorNode)) {
+        heldRange = null;
+        return;
+      }
+      heldRange = selection.getRangeAt(0).cloneRange();
+    }
+
+    function rangeWithin(editor, range) {
+      const startsInside = editor.contains(range.startContainer);
+      const endsInside = editor.contains(range.endContainer);
+      if (startsInside && endsInside) return range;
+      let touches = false;
+      try { touches = range.intersectsNode(editor); } catch (error) { touches = false; }
+      if (!touches) return null;
+      const part = document.createRange();
+      if (startsInside) {
+        part.setStart(range.startContainer, range.startOffset);
+        part.setEnd(editor, editor.childNodes.length);
+        return part;
+      }
+      if (endsInside) {
+        part.setStart(editor, 0);
+        part.setEnd(range.endContainer, range.endOffset);
+        return part;
+      }
+      part.selectNodeContents(editor);
+      return part;
+    }
+
+    function selectionRange() {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount && !selection.isCollapsed) {
+        const live = selection.getRangeAt(0);
+        if (editorFor(live.startContainer) || editorFor(live.endContainer)) return live;
+      }
+      if (heldRange && heldRange.startContainer.isConnected) return heldRange;
+      return null;
+    }
+
+    function styleSelection(patch) {
+      const range = selectionRange();
+      if (!range || range.collapsed) return;
+      textEditors.forEach((editor) => {
+        const part = rangeWithin(editor, range);
+        if (!part || part.collapsed) return;
+        if (!BookInk.restyle(editor, part, patch, editor === titleField, baseStyle)) return;
+        editor.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount && !selection.isCollapsed) heldRange = selection.getRangeAt(0).cloneRange();
+    }
+
+    function keepEditorFocus(event) {
+      rememberSelection();
+      event.preventDefault();
+    }
+
+    styleToggle.addEventListener("mousedown", keepEditorFocus);
+    document.getElementById("fonts").addEventListener("mousedown", keepEditorFocus);
+    document.getElementById("colors").addEventListener("mousedown", keepEditorFocus);
+
+    document.addEventListener("selectionchange", () => {
+      if (selectingText) return;
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount || !editorFor(selection.anchorNode)) return;
+      if (selection.isCollapsed) heldRange = null;
+      else heldRange = selection.getRangeAt(0).cloneRange();
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("#book-title, .page-text")) {
+        selectingText = true;
+        heldRange = null;
+        return;
+      }
+      selectingText = false;
+      if (target.closest("#choices, .style-toggle")) return;
+      heldRange = null;
+    });
+
+    document.addEventListener("pointerup", () => {
+      if (!selectingText) return;
+      selectingText = false;
+      syncHeldRange();
+    });
+
+    textEditors.forEach((editor) => {
+      editor.addEventListener("keyup", syncHeldRange);
+    });
+
+    fontButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectFont(button);
+        styleSelection({ font: button.dataset.font, tracking: button.dataset.tracking });
+      });
+    });
+
+    colorButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        selectColor(button);
+        styleSelection({ color: button.dataset.color });
+      });
+    });
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("picture"));
+        image.src = src;
+      });
+    }
+
+    function bookFileName() {
+      const title = titleField.textContent.trim() || "Book Batches";
+      const safe = title.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim().slice(0, 80);
+      return (safe || "Book Batches") + ".pdf";
+    }
+
+    function titleSizeFor(text, coverWidth) {
+      const length = text.length;
+      let size = 10;
+      if (length > 48) size = 4.2;
+      else if (length > 32) size = 5.4;
+      else if (length > 18) size = 6.8;
+      else if (length > 12) size = 8.2;
+      return (size / 100) * coverWidth;
+    }
+
+    function wrapLines(ctx, text, maxWidth) {
+      const lines = [];
+      String(text).split("\n").forEach((paragraph) => {
+        if (!paragraph) {
+          lines.push("");
+          return;
+        }
+        let line = "";
+        paragraph.split(/\s+/).forEach((word) => {
+          const trial = line ? line + " " + word : word;
+          if (ctx.measureText(trial).width <= maxWidth) {
+            line = trial;
+            return;
+          }
+          if (line) lines.push(line);
+          if (ctx.measureText(word).width <= maxWidth) {
+            line = word;
+            return;
+          }
+          line = "";
+          Array.from(word).forEach((char) => {
+            const next = line + char;
+            if (ctx.measureText(next).width > maxWidth && line) {
+              lines.push(line);
+              line = char;
+            } else {
+              line = next;
+            }
+          });
+        });
+        lines.push(line);
+      });
+      return lines;
+    }
+
+    function drawTextBlock(ctx, text, box, style) {
+      ctx.save();
+      ctx.fillStyle = style.color;
+      ctx.font = "400 " + style.size + "px " + style.family;
+      ctx.letterSpacing = style.tracking || "0px";
+      ctx.textBaseline = "top";
+      ctx.textAlign = style.align === "center" ? "center" : "left";
+      const lines = wrapLines(ctx, text, box.width);
+      const lineHeight = style.size * style.leading;
+      const block = lines.length * lineHeight;
+      let y = style.align === "center" ? box.y + Math.max(0, (box.height - block) / 2) : box.y;
+      const x = style.align === "center" ? box.x + box.width / 2 : box.x;
+      ctx.beginPath();
+      ctx.rect(box.x, box.y, box.width, box.height);
+      ctx.clip();
+      lines.forEach((line) => {
+        if (y < box.y + box.height) ctx.fillText(line, x, y);
+        y += lineHeight;
+      });
+      ctx.restore();
+    }
+
+    const A4_EXPORT = { width: 1240, height: 1754, pointWidth: 595, pointHeight: 842 };
+
+    function paintDiamonds(ctx, x, y, pageWidth) {
+      const side = pageWidth * 0.012;
+      const step = pageWidth * 0.032;
+      ctx.save();
+      ctx.fillStyle = "#7a3030";
+      [-step, 0, step].forEach((offset) => {
+        ctx.save();
+        ctx.translate(x + offset, y);
+        ctx.rotate(Math.PI / 4);
+        ctx.fillRect(-side / 2, -side / 2, side, side);
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+
+    function paintPaper(ctx, x, width, height) {
+      ctx.fillStyle = "#f4f0e7";
+      ctx.fillRect(x, 0, width, height);
+      const glow = ctx.createRadialGradient(
+        x + width / 2, height / 2, Math.min(width, height) * 0.2,
+        x + width / 2, height / 2, Math.max(width, height) * 0.7
+      );
+      glow.addColorStop(0, "rgba(255, 253, 248, 0.5)");
+      glow.addColorStop(1, "rgba(244, 240, 231, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(x, 0, width, height);
+    }
+
+    function paintCoverText(ctx, pageWidth, pageHeight) {
+      const text = titleField.textContent.trim();
+      if (text) {
+        BookInk.drawBlock(ctx, BookInk.paragraphs(titleField.innerHTML, baseStyle), {
+          x: pageWidth * 0.11,
+          y: pageHeight * 0.155,
+          width: pageWidth * 0.78,
+          height: pageHeight * 0.41
+        }, {
+          size: titleSizeFor(text, pageWidth),
+          leading: 1.05,
+          align: "center"
+        });
+      }
+      paintDiamonds(ctx, pageWidth / 2, pageHeight * 0.65, pageWidth);
+    }
+
+    function paintSpreadText(ctx, index, pageWidth, pageHeight) {
+      const bodies = spreadBodies(pageBodies[index - 1]);
+      bodies.forEach((body, side) => {
+        const left = side * pageWidth;
+        const paragraphs = BookInk.paragraphs(body, baseStyle);
+        if (BookInk.plainText(paragraphs).trim()) {
+          BookInk.drawBlock(ctx, paragraphs, {
+            x: left + pageWidth * 0.12,
+            y: pageHeight * 0.1,
+            width: pageWidth * 0.76,
+            height: pageHeight * 0.79
+          }, {
+            size: pageWidth * 0.034,
+            leading: 1.6,
+            tracking: "0.01em",
+            align: "left"
+          });
+        }
+        drawTextBlock(ctx, String(index * 2 - 1 + side), {
+          x: left,
+          y: pageHeight * 0.935,
+          width: pageWidth,
+          height: pageHeight * 0.05
+        }, {
+          family: "Baskerville, Palatino, serif",
+          color: "rgba(36, 28, 22, 0.55)",
+          size: pageWidth * 0.026,
+          leading: 1.2,
+          tracking: "0.08em",
+          align: "center"
+        });
+      });
+    }
+
+    async function jpegPage(canvas, x) {
+      const page = document.createElement("canvas");
+      page.width = A4_EXPORT.width;
+      page.height = A4_EXPORT.height;
+      page.getContext("2d").drawImage(canvas, x, 0, page.width, page.height, 0, 0, page.width, page.height);
+      const blob = await new Promise((resolve) => page.toBlob(resolve, "image/jpeg", 0.92));
+      return {
+        width: page.width,
+        height: page.height,
+        pointWidth: A4_EXPORT.pointWidth,
+        pointHeight: A4_EXPORT.pointHeight,
+        data: new Uint8Array(await blob.arrayBuffer())
+      };
+    }
+
+    function paintCoverPhoto(ctx, image, width, height) {
+      const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+      const drawWidth = image.naturalWidth * scale;
+      const drawHeight = image.naturalHeight * scale;
+      ctx.drawImage(image, (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+    }
+
+    async function renderPage(index) {
+      const pageWidth = A4_EXPORT.width;
+      const pageHeight = A4_EXPORT.height;
+      const pageCount = index === 0 ? 1 : 2;
+      const width = pageWidth * pageCount;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = pageHeight;
+      const ctx = canvas.getContext("2d");
+      for (let side = 0; side < pageCount; side += 1) paintPaper(ctx, side * pageWidth, pageWidth, pageHeight);
+      if (index === 0 && coverPhoto) paintCoverPhoto(ctx, await loadImage(coverPhoto), pageWidth, pageHeight);
+      for (const photo of photoSets[index] || []) {
+        const image = await loadImage(photo.src);
+        const photoWidth = photo.width * width;
+        const photoHeight = photoWidth * (image.naturalHeight / image.naturalWidth);
+        ctx.drawImage(image, photo.x * width, photo.y * pageHeight, photoWidth, photoHeight);
+      }
+      if (drawings[index]) {
+        const inkImage = await loadImage(drawings[index]);
+        ctx.drawImage(inkImage, 0, 0, width, pageHeight);
+      }
+      if (index === 0) paintCoverText(ctx, pageWidth, pageHeight);
+      else paintSpreadText(ctx, index, pageWidth, pageHeight);
+      const pages = [];
+      for (let side = 0; side < pageCount; side += 1) pages.push(await jpegPage(canvas, side * pageWidth));
+      return pages;
+    }
+
+    function pdfFromJpegs(jpegs) {
+      const chunks = [];
+      let length = 0;
+      const offsets = [0];
+      const push = (chunk) => {
+        const bytes = typeof chunk === "string" ? new TextEncoder().encode(chunk) : chunk;
+        chunks.push(bytes);
+        length += bytes.length;
+      };
+      const startObject = (id) => {
+        offsets[id] = length;
+        push(id + " 0 obj\n");
+      };
+      const endObject = () => push("endobj\n");
+      push("%PDF-1.4\n");
+      const kids = jpegs.map((_, index) => (3 + index * 3) + " 0 R").join(" ");
+      startObject(1);
+      push("<< /Type /Catalog /Pages 2 0 R >>\n");
+      endObject();
+      startObject(2);
+      push("<< /Type /Pages /Count " + jpegs.length + " /Kids [" + kids + "] >>\n");
+      endObject();
+      jpegs.forEach((jpeg, index) => {
+        const pageId = 3 + index * 3;
+        const contentId = pageId + 1;
+        const imageId = pageId + 2;
+        const content = "q\n" + jpeg.pointWidth + " 0 0 " + jpeg.pointHeight + " 0 0 cm\n/Im0 Do\nQ\n";
+        startObject(pageId);
+        push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + jpeg.pointWidth + " " + jpeg.pointHeight + "] /Resources << /XObject << /Im0 " + imageId + " 0 R >> >> /Contents " + contentId + " 0 R >>\n");
+        endObject();
+        startObject(contentId);
+        push("<< /Length " + content.length + " >>\nstream\n" + content + "endstream\n");
+        endObject();
+        startObject(imageId);
+        push("<< /Type /XObject /Subtype /Image /Width " + jpeg.width + " /Height " + jpeg.height + " /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " + jpeg.data.length + " >>\nstream\n");
+        push(jpeg.data);
+        push("\nendstream\n");
+        endObject();
+      });
+      const xref = length;
+      const size = 3 + jpegs.length * 3;
+      push("xref\n0 " + size + "\n");
+      push("0000000000 65535 f \n");
+      for (let id = 1; id < size; id += 1) {
+        push(String(offsets[id]).padStart(10, "0") + " 00000 n \n");
+      }
+      push("trailer\n<< /Size " + size + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF");
+      return new Blob(chunks, { type: "application/pdf" });
+    }
+
+    function downloadBook(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    async function bookPdfBytes() {
+      saveCurrentPage();
+      const pages = [];
+      for (let index = 0; index < pageBodies.length + 1; index += 1) {
+        pages.push(...await renderPage(index));
+      }
+      const blob = pdfFromJpegs(pages);
+      return new Uint8Array(await blob.arrayBuffer());
+    }
+
+    async function exportBook() {
+      if (exporting) return;
+      exporting = true;
+      exportButton.disabled = true;
+      const filename = bookFileName();
+      try {
+        const bytes = await bookPdfBytes();
+        if (!bytes.byteLength) return;
+        downloadBook(new Blob([bytes], { type: "application/pdf" }), filename);
+      } finally {
+        exporting = false;
+        exportButton.disabled = false;
+      }
+    }
+
+    function beginNewBook() {
+      currentBookId = null;
+      pageIndex = 0;
+      pageBodies.length = 0;
+      drawings.length = 0;
+      photoSets.length = 0;
+      setCoverPhoto("");
+      titleField.textContent = "";
+      markEmpty();
+      fitTitle();
+      setBaseStyle(DEFAULT_STYLE);
+      selectPen(DEFAULT_STYLE);
+      setDrawMode(false);
+      setStylesOpen(false);
+    }
+
+    function letterInk(cloth) {
+      const hex = (cloth || "#241c16").replace("#", "");
+      const red = parseInt(hex.slice(0, 2), 16);
+      const green = parseInt(hex.slice(2, 4), 16);
+      const blue = parseInt(hex.slice(4, 6), 16);
+      const luma = (red * 299 + green * 587 + blue * 114) / 1000;
+      return luma > 150 ? "#241c16" : "#e6d3a8";
+    }
+
+    function spineHeight(id) {
+      const total = Array.from(id).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      return 158 + (total % 36);
+    }
+
+    function spineWidth(book) {
+      return Math.min(62, 26 + (book.pages || []).length * 5);
+    }
+
+    function volumeButton(book) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "volume";
+      button.dataset.id = book.id;
+      const cloth = book.spineColor || book.color || "#241c16";
+      button.style.setProperty("--cloth", cloth);
+      button.style.setProperty("--letter", letterInk(cloth));
+      button.style.height = spineHeight(book.id) + "px";
+      button.style.width = spineWidth(book) + "px";
+      button.style.fontFamily = book.spineFont || book.fontFamily || "Baskerville, Palatino, serif";
+      button.setAttribute("aria-label", book.title || "Untitled");
+      const title = document.createElement("span");
+      title.className = "spine-title";
+      title.textContent = book.title || "Untitled";
+      button.append(title);
+      return button;
+    }
+
+    function renderShelves() {
+      const rows = library.querySelectorAll(".books");
+      rows.forEach((row) => row.replaceChildren());
+      libraryBooks.slice().sort((a, b) => a.savedAt - b.savedAt).forEach((book, index) => {
+        const row = rows[Math.min(rows.length - 1, Math.floor(index / 8))];
+        row.append(volumeButton(book));
+      });
+    }
+
+    async function showLibrary() {
+      try { await libraryReady; } catch (error) {}
+      setDrawMode(false);
+      titleScreen.hidden = true;
+      titleScreen.classList.remove("is-leaving");
+      studio.hidden = true;
+      library.hidden = false;
+      setShelfNote("");
+      renderShelves();
+    }
+
+    function setShelfNote(text) {
+      shelfNote.textContent = text;
+    }
+
+    function showTitle() {
+      library.hidden = true;
+      studio.hidden = true;
+      titleScreen.hidden = false;
+      titleScreen.classList.remove("is-leaving");
+      enterButton.focus();
+    }
+
+    function rememberedBook() {
+      const spine = BookInk.leadingStyle(titleField, baseStyle);
+      return {
+        id: currentBookId || String(Date.now()),
+        title: titleField.textContent.trim() || "Untitled",
+        titleHtml: titleField.innerHTML,
+        fontFamily: baseStyle.font,
+        tracking: baseStyle.tracking,
+        color: baseStyle.color,
+        spineFont: spine.font,
+        spineColor: spine.color,
+        pages: pageBodies.slice(),
+        drawings: drawings.map((item) => item || ""),
+        photos: photoSets.map((item) => item || []),
+        coverPhoto,
+        savedAt: Date.now()
+      };
+    }
+
+    async function saveToShelf() {
+      try { await libraryReady; } catch (error) {}
+      saveCurrentPage();
+      const record = rememberedBook();
+      currentBookId = record.id;
+      const index = libraryBooks.findIndex((book) => book.id === record.id);
+      if (index >= 0) libraryBooks[index] = record;
+      else libraryBooks.push(record);
+      let saved = true;
+      try { await BookLibrary.store(record); } catch (error) { saved = false; }
+      await showLibrary();
+      setShelfNote(saved ? "" : "This book could not be saved. Use Back up to keep a copy.");
+    }
+
+    async function deleteBook(id) {
+      const book = libraryBooks.find((item) => item.id === id);
+      if (!book) return;
+      try {
+        await BookLibrary.remove(id);
+      } catch (error) {
+        setShelfNote("That book could not be deleted.");
+        return;
+      }
+      BookSounds.crumple();
+      libraryBooks.splice(libraryBooks.indexOf(book), 1);
+      if (currentBookId === id) currentBookId = null;
+      renderShelves();
+      setShelfNote("\u201c" + (book.title || "Untitled") + "\u201d was deleted.");
+    }
+
+    async function backUpShelf() {
+      try { await libraryReady; } catch (error) {}
+      if (!libraryBooks.length) {
+        setShelfNote("There are no books on the shelf to back up yet.");
+        return;
+      }
+      BookLibrary.downloadBackup(libraryBooks);
+      setShelfNote("Backup saved to your downloads.");
+    }
+
+    async function restoreShelf(file) {
+      try { await libraryReady; } catch (error) {}
+      let books;
+      try {
+        books = await BookLibrary.readBackup(file);
+      } catch (error) {
+        setShelfNote(error.message === "too-new"
+          ? "This backup was made by a newer version of Book Batches."
+          : "That file is not a Book Batches backup.");
+        return;
+      }
+      const incoming = BookLibrary.booksToRestore(books, libraryBooks);
+      try {
+        await BookLibrary.storeMany(incoming);
+      } catch (error) {
+        setShelfNote("The backup could not be restored.");
+        return;
+      }
+      incoming.forEach((book) => {
+        const index = libraryBooks.findIndex((item) => item.id === book.id);
+        if (index >= 0) libraryBooks[index] = book;
+        else libraryBooks.push(book);
+      });
+      renderShelves();
+      const count = incoming.length;
+      setShelfNote(count === 0
+        ? "Every book in that backup is already on the shelf."
+        : "Restored " + count + (count === 1 ? " book." : " books."));
+    }
+
+    function openSavedBook(record) {
+      currentBookId = record.id;
+      pageBodies.length = 0;
+      pageBodies.push(...(record.pages || []).map((body) => spreadBodies(body).map(BookInk.clean)));
+      drawings.length = 0;
+      (record.drawings || []).forEach((url, index) => {
+        if (url) drawings[index] = url;
+      });
+      photoSets.length = 0;
+      (record.photos || []).forEach((set, index) => {
+        photoSets[index] = set || [];
+      });
+      setCoverPhoto(record.coverPhoto);
+      pageIndex = 0;
+      if (record.titleHtml) titleField.innerHTML = BookInk.clean(record.titleHtml);
+      else titleField.textContent = record.title === "Untitled" ? "" : record.title;
+      markEmpty();
+      fitTitle();
+      const savedBase = {
+        font: record.fontFamily || DEFAULT_STYLE.font,
+        tracking: record.tracking || DEFAULT_STYLE.tracking,
+        color: record.color || DEFAULT_STYLE.color
+      };
+      setBaseStyle(savedBase);
+      selectPen(savedBase);
+      setDrawMode(false);
+      setStylesOpen(false);
+      library.hidden = true;
+      studio.hidden = false;
+      revealCurrentPage();
+      titleField.focus();
+    }
+
+    BookLibrary.keepStorage();
+    const libraryReady = BookLibrary.readAll().then((books) => {
+      books.forEach((book) => {
+        if (!libraryBooks.some((item) => item.id === book.id)) libraryBooks.push(book);
+      });
+      return libraryBooks;
+    }).catch(() => libraryBooks);
+
+    function buildStickerGrid() {
+      const grid = document.getElementById("sticker-grid");
+      (window.BOOK_STICKERS || []).forEach((sticker) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "sticker";
+        button.title = sticker.name;
+        button.setAttribute("aria-label", sticker.name);
+        button.dataset.url = sticker.url;
+        const image = document.createElement("img");
+        image.src = sticker.url;
+        image.alt = "";
+        button.append(image);
+        grid.append(button);
+      });
+    }
+
+    async function placeSticker(url) {
+      const image = await loadImage(url);
+      setDrawMode(false);
+      placeImportedPhoto(imageToDataUrl(image, "image/png"), 0.4);
+      setStylesOpen(false);
+    }
+
+    buildStickerGrid();
+    setupAiPictures({ loadImage, setDrawMode, placeImportedPhoto, imageToDataUrl, setStylesOpen });
+
+    document.getElementById("cool-toggle").addEventListener("click", () => {
+      setGalleryOpen(document.getElementById("gallery").hidden);
+    });
+
+    document.getElementById("sticker-grid").addEventListener("click", (event) => {
+      const sticker = event.target.closest(".sticker");
+      if (sticker) placeSticker(sticker.dataset.url);
+    });
+
+    exportButton.addEventListener("click", () => {
+      exportBook();
+    });
+
+    saveBookButton.addEventListener("click", () => {
+      saveToShelf();
+    });
+
+    openLibraryButton.addEventListener("click", showLibrary);
+
+    leaveLibraryButton.addEventListener("click", showTitle);
+
+    setupShelfBin({
+      library,
+      findBook: (id) => libraryBooks.find((book) => book.id === id),
+      deleteBook
+    });
+
+    document.getElementById("back-up-shelf").addEventListener("click", backUpShelf);
+
+    document.getElementById("restore-shelf").addEventListener("click", () => {
+      restoreFile.click();
+    });
+
+    restoreFile.addEventListener("change", async () => {
+      const file = restoreFile.files[0];
+      restoreFile.value = "";
+      if (file) await restoreShelf(file);
+    });
+
+    library.addEventListener("click", (event) => {
+      const volume = event.target.closest(".volume");
+      if (!volume) return;
+      const record = libraryBooks.find((book) => book.id === volume.dataset.id);
+      if (record) openSavedBook(record);
+    });
+
+    function returnToMenu() {
+      if (studio.classList.contains("is-turning")) return;
+      setDrawMode(false);
+      setStylesOpen(false);
+      showTitle();
+    }
+
+    document.getElementById("cover-back").addEventListener("click", returnToMenu);
+    enterButton.addEventListener("click", leaveTitle);
+    enterButton.focus();
+  </script>
+</body>
+</html>

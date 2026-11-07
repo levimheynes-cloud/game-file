@@ -1,0 +1,8 @@
+{
+  "files.exclude": {
+    "book-*.js": true
+  },
+  "search.exclude": {
+    "book-*.js": true
+  }
+}
