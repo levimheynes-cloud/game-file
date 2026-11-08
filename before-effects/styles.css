@@ -16,7 +16,7 @@ button, p, h2 { margin: 0; }
   overflow: hidden;
   background: #000;
   grid-template-columns: 180px minmax(0, 1fr) 200px;
-  grid-template-rows: 48px minmax(0, 1fr) 36px;
+  grid-template-rows: 48px minmax(0, 1fr) 212px;
   grid-template-areas:
     "top top top"
     "layers stage inspector"
@@ -111,15 +111,35 @@ button, p, h2 { margin: 0; }
 }
 
 .timeline {
+  position: relative;
   grid-area: timeline;
+  display: flex;
+  flex-direction: column;
   border-top: 1px solid #2a2a2a;
   min-width: 0;
+  min-height: 0;
 }
 
 .ruler {
   position: relative;
-  height: 36px;
+  flex: none;
+  height: 32px;
+  border-bottom: 1px solid #2a2a2a;
 }
+
+.tracks {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.track {
+  flex: 1;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.track:last-child { border-bottom: 0; }
 
 .tick {
   position: absolute;
@@ -171,7 +191,7 @@ button, p, h2 { margin: 0; }
 @media (max-width: 899px) {
   .station {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 48px minmax(0, 1fr) 36px auto auto;
+    grid-template-rows: 48px minmax(0, 1fr) 212px auto auto;
     grid-template-areas:
       "top"
       "stage"
