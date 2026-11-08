@@ -10,32 +10,54 @@
   <div class="station">
     <header class="topbar">
       <p class="name">Untitled</p>
-      <button class="play" type="button" aria-label="Play">
-        <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+      <button class="play" id="play" type="button" aria-label="Play">
+        <svg class="triangle" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
           <path d="M11 7 L25 16 L11 25 Z" fill="currentColor"></path>
         </svg>
+        <svg class="pause" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+          <path d="M10 7 H14 V25 H10 Z M18 7 H22 V25 H18 Z" fill="currentColor"></path>
+        </svg>
       </button>
-      <p class="time">0:00.00</p>
+      <p class="time" id="time">0:00.00</p>
     </header>
 
     <aside class="panel layers is-selected" id="layers">
       <h2>Layers</h2>
-      <p>No layers yet</p>
+      <div class="add-grid">
+        <button type="button" data-add="rectangle">Rectangle</button>
+        <button type="button" data-add="ellipse">Ellipse</button>
+        <button type="button" data-add="text">Text</button>
+        <button type="button" id="import-button">Import</button>
+      </div>
+      <input id="import-input" type="file" hidden accept=".png,.jpg,.jpeg,.webp,.gif,.mp4,.webm,.mov,image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime">
+      <p id="layer-empty">No layers yet</p>
+      <div class="layer-list" id="layer-list"></div>
     </aside>
 
     <main class="stage">
       <div class="frame">
+        <canvas id="picture" aria-label="Picture"></canvas>
         <span class="size">1920 × 1080</span>
       </div>
     </main>
 
     <aside class="panel inspector" id="inspector">
       <h2>Inspector</h2>
-      <p>Nothing selected</p>
+      <p id="inspector-empty">Nothing selected</p>
+      <form class="inspector-form" id="inspector-form" hidden>
+        <label>X <input id="field-x" type="number" step="1"></label>
+        <label>Y <input id="field-y" type="number" step="1"></label>
+        <label>Scale <input id="field-scale" type="number" step="0.01" min="0.05"></label>
+        <label>Rotation <input id="field-rotation" type="number" step="1"></label>
+        <label>Opacity <input id="field-opacity" type="number" step="0.01" min="0" max="1"></label>
+        <label>Fill <input id="field-fill" type="color" value="#ffffff"></label>
+        <label>Text <input id="field-text" type="text"></label>
+        <label>Font size <input id="field-font-size" type="number" step="1" min="1"></label>
+      </form>
     </aside>
 
     <section class="timeline" aria-label="Timeline">
-      <div class="playhead"></div>
+      <div class="playhead" id="playhead"></div>
       <div class="ruler">
         <span class="tick tick-start" style="left: 0%">0</span>
         <span class="tick" style="left: 20%">1</span>
@@ -44,7 +66,7 @@
         <span class="tick" style="left: 80%">4</span>
         <span class="tick tick-end" style="left: 100%">5</span>
       </div>
-      <div class="tracks" aria-hidden="true">
+      <div class="tracks" id="tracks">
         <div class="track"></div>
         <div class="track"></div>
         <div class="track"></div>
@@ -58,24 +80,6 @@
       <button class="tab" type="button" data-panel="inspector">Inspector</button>
     </nav>
   </div>
-  <script>
-    const tabs = document.querySelectorAll(".tab");
-    const panels = {
-      layers: document.getElementById("layers"),
-      inspector: document.getElementById("inspector")
-    };
-
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const name = tab.dataset.panel;
-        tabs.forEach((item) => {
-          item.classList.toggle("is-selected", item === tab);
-        });
-        Object.entries(panels).forEach(([key, panel]) => {
-          panel.classList.toggle("is-selected", key === name);
-        });
-      });
-    });
-  </script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
