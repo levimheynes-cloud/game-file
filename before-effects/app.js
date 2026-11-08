@@ -24,6 +24,8 @@ const layerList = document.getElementById("layer-list");
 const inspectorEmpty = document.getElementById("inspector-empty");
 const inspectorForm = document.getElementById("inspector-form");
 const fileInput = document.getElementById("import-input");
+const tracks = document.getElementById("tracks");
+const playhead = document.getElementById("playhead");
 
 const fields = {
   x: document.getElementById("field-x"),
@@ -168,6 +170,7 @@ function tick(now) {
   lastTick = now;
   setPlayhead(project, project.playhead + elapsed);
   timeReadout.textContent = formatTime(project.playhead);
+  placePlayhead();
   syncPlayback(project, true);
   draw();
   requestAnimationFrame(tick);
@@ -304,9 +307,53 @@ function resize() {
 
 function refresh() {
   renderList();
+  renderTimeline();
   renderInspector();
   timeReadout.textContent = formatTime(project.playhead);
+  placePlayhead();
   draw();
+}
+
+function placePlayhead() {
+  const ratio = project.duration > 0 ? project.playhead / project.duration : 0;
+  playhead.style.left = `${ratio * 100}%`;
+}
+
+function renderTimeline() {
+  tracks.classList.toggle("has-layers", project.layers.length > 0);
+  tracks.replaceChildren();
+  if (project.layers.length === 0) {
+    for (let index = 0; index < 5; index += 1) {
+      const track = document.createElement("div");
+      track.className = "track";
+      tracks.append(track);
+    }
+    return;
+  }
+  for (const layer of [...project.layers].reverse()) tracks.append(clipRow(layer));
+}
+
+function clipRow(layer) {
+  const row = document.createElement("div");
+  row.className = "track";
+  row.dataset.id = layer.id;
+  if (layer.id === project.selectedLayerId) row.classList.add("is-selected");
+  const clip = document.createElement("button");
+  clip.type = "button";
+  clip.className = "clip";
+  if (!layer.visible) clip.classList.add("is-hidden");
+  const span = project.duration || 1;
+  clip.style.left = `${(layer.inPoint / span) * 100}%`;
+  clip.style.width = `${Math.max((layer.outPoint - layer.inPoint) / span, 0) * 100}%`;
+  clip.textContent = layer.name;
+  clip.addEventListener("click", () => {
+    selectLayer(project, layer.id);
+    markSelection();
+    renderInspector();
+    draw();
+  });
+  row.append(clip);
+  return row;
 }
 
 function draw() {
@@ -323,8 +370,12 @@ function mediaFor(layer) {
 }
 
 function markSelection() {
+  const selected = project.selectedLayerId;
   layerList.querySelectorAll(".layer-row").forEach((row) => {
-    row.classList.toggle("is-selected", row.dataset.id === project.selectedLayerId);
+    row.classList.toggle("is-selected", row.dataset.id === selected);
+  });
+  tracks.querySelectorAll(".track").forEach((row) => {
+    row.classList.toggle("is-selected", row.dataset.id === selected);
   });
 }
 

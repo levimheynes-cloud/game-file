@@ -248,14 +248,42 @@ button, p, h2, input { margin: 0; }
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow: auto;
 }
 
 .track {
-  flex: 1;
+  position: relative;
+  flex: 1 0 32px;
+  min-height: 32px;
   border-bottom: 1px solid #2a2a2a;
 }
 
 .track:last-child { border-bottom: 0; }
+
+.tracks.has-layers .track { flex: 0 0 32px; }
+
+.clip {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  padding: 0 8px;
+  border: 1px solid rgba(244, 239, 230, 0.72);
+  background: #1c1c1c;
+  color: #f4efe6;
+  font: 11px/22px "Avenir Next", "Segoe UI", sans-serif;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.track.is-selected .clip {
+  border-color: #f4efe6;
+  background: #2a2a2a;
+}
+
+.clip.is-hidden { opacity: 0.4; }
 
 .tick {
   position: absolute;
@@ -284,7 +312,7 @@ button, p, h2, input { margin: 0; }
 
 .playhead {
   position: absolute;
-  z-index: 1;
+  z-index: 2;
   left: 0;
   top: 0;
   bottom: 0;
