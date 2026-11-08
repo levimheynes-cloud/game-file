@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Before Effects</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="station">
+    <header class="topbar">
+      <p class="name">Untitled</p>
+      <button class="play" type="button" aria-label="Play">
+        <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+          <path d="M11 7 L25 16 L11 25 Z" fill="currentColor"></path>
+        </svg>
+      </button>
+      <p class="time">0:00.00</p>
+    </header>
+
+    <aside class="panel layers is-selected" id="layers">
+      <h2>Layers</h2>
+      <p>No layers yet</p>
+    </aside>
+
+    <main class="stage">
+      <div class="frame">
+        <span class="size">1920 × 1080</span>
+      </div>
+    </main>
+
+    <aside class="panel inspector" id="inspector">
+      <h2>Inspector</h2>
+      <p>Nothing selected</p>
+    </aside>
+
+    <section class="timeline" aria-label="Timeline">
+      <div class="ruler">
+        <div class="playhead"></div>
+        <span class="tick tick-start" style="left: 0%">0</span>
+        <span class="tick" style="left: 20%">1</span>
+        <span class="tick" style="left: 40%">2</span>
+        <span class="tick" style="left: 60%">3</span>
+        <span class="tick" style="left: 80%">4</span>
+        <span class="tick tick-end" style="left: 100%">5</span>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Panels">
+      <button class="tab is-selected" type="button" data-panel="layers">Layers</button>
+      <button class="tab" type="button" data-panel="inspector">Inspector</button>
+    </nav>
+  </div>
+  <script>
+    const tabs = document.querySelectorAll(".tab");
+    const panels = {
+      layers: document.getElementById("layers"),
+      inspector: document.getElementById("inspector")
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const name = tab.dataset.panel;
+        tabs.forEach((item) => {
+          item.classList.toggle("is-selected", item === tab);
+        });
+        Object.entries(panels).forEach(([key, panel]) => {
+          panel.classList.toggle("is-selected", key === name);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
